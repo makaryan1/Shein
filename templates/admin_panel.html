@@ -1,0 +1,400 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - TemuClone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-sidebar {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .admin-content {
+            padding: 20px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .product-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 111, 67, 0.4);
+            color: white;
+        }
+        .modal-content {
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 admin-sidebar">
+                <div class="text-center mb-4">
+                    <h3><i class="fas fa-cog"></i> Админ-панель</h3>
+                    <p class="mb-0">{{ session.username }}</p>
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a class="nav-link text-white" href="#dashboard" data-section="dashboard">
+                        <i class="fas fa-dashboard me-2"></i> Дашборд
+                    </a>
+                    <a class="nav-link text-white" href="#products" data-section="products">
+                        <i class="fas fa-box me-2"></i> Товары
+                    </a>
+                    <a class="nav-link text-white" href="#import" data-section="import">
+                        <i class="fas fa-download me-2"></i> Импорт товаров
+                    </a>
+                    <a class="nav-link text-white" href="#settings" data-section="settings">
+                        <i class="fas fa-cog me-2"></i> Настройки
+                    </a>
+                    <hr class="my-3">
+                    <a class="nav-link text-white" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-2"></i> На главную
+                    </a>
+                    <a class="nav-link text-white" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt me-2"></i> Выйти
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 admin-content">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="admin-section">
+                    <h2>Дашборд</h2>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-box fa-2x text-primary mb-2"></i>
+                                <h4>{{ products|length }}</h4>
+                                <p class="text-muted">Всего товаров</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                                <h4>--</h4>
+                                <p class="text-muted">Пользователей</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-shopping-cart fa-2x text-warning mb-2"></i>
+                                <h4>--</h4>
+                                <p class="text-muted">Заказов</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-dollar-sign fa-2x text-info mb-2"></i>
+                                <h4>--</h4>
+                                <p class="text-muted">Доход</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div id="products-section" class="admin-section" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Управление товарами</h2>
+                        <button class="btn btn-admin" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                            <i class="fas fa-plus"></i> Добавить товар
+                        </button>
+                    </div>
+
+                    <div class="product-table">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Изображение</th>
+                                    <th>Название</th>
+                                    <th>Цена</th>
+                                    <th>Категория</th>
+                                    <th>Скидка</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.id }}</td>
+                                    <td>
+                                        <img src="{{ product.image }}" alt="{{ product.name }}" 
+                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                    </td>
+                                    <td>{{ product.name }}</td>
+                                    <td>${{ "%.2f"|format(product.price) }}</td>
+                                    <td>{{ product.category }}</td>
+                                    <td>{{ product.discount }}%</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning me-1" onclick="editProduct({{ product.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteProduct({{ product.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Import Section -->
+                <div id="import-section" class="admin-section" style="display:none;">
+                    <h2>Импорт товаров</h2>
+                    
+                    <div class="stat-card">
+                        <h5><i class="fas fa-shopping-bag me-2"></i>Импорт с Shein</h5>
+                        <p class="text-muted">Автоматически добавляйте товары с Shein</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Поисковый запрос:</label>
+                                <input type="text" id="sheinQuery" class="form-control" placeholder="Например: dress, shoes, bag" value="clothes">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Количество товаров:</label>
+                                <input type="number" id="sheinLimit" class="form-control" value="10" min="1" max="50">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-admin w-100" onclick="importFromShein()">
+                                    <i class="fas fa-download me-2"></i>Импортировать
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settings-section" class="admin-section" style="display:none;">
+                    <h2>Настройки сайта</h2>
+                    
+                    <div class="stat-card">
+                        <h5><i class="fas fa-percentage me-2"></i>Массовые скидки</h5>
+                        <p class="text-muted">Примените скидку ко всем товарам</p>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Размер скидки (%):</label>
+                                <input type="number" id="discountPercent" class="form-control" value="20" min="1" max="90">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-warning w-100" onclick="applyGlobalDiscount()">
+                                    <i class="fas fa-tags me-2"></i>Применить скидку
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h5><i class="fas fa-cog me-2"></i>Другие настройки</h5>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                            <label class="form-check-label" for="maintenanceMode">
+                                Режим технического обслуживания
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить товар</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProductForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Название товара</label>
+                                    <input type="text" class="form-control" name="name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Цена ($)</label>
+                                    <input type="number" class="form-control" name="price" step="0.01" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Категория</label>
+                                    <select class="form-control" name="category" required>
+                                        <option value="Электроника">Электроника</option>
+                                        <option value="Одежда">Одежда</option>
+                                        <option value="Обувь">Обувь</option>
+                                        <option value="Аксессуары">Аксессуары</option>
+                                        <option value="Дом">Дом</option>
+                                        <option value="Красота">Красота</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">URL изображения</label>
+                                    <input type="url" class="form-control" name="image" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Рейтинг</label>
+                                    <input type="number" class="form-control" name="rating" min="1" max="5" step="0.1" value="4.5">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Скидка (%)</label>
+                                    <input type="number" class="form-control" name="discount" min="0" max="90" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-admin" onclick="saveProduct()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Navigation between sections
+        document.querySelectorAll('[data-section]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.dataset.section;
+                
+                // Hide all sections
+                document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+                
+                // Show selected section
+                document.getElementById(section + '-section').style.display = 'block';
+                
+                // Update active nav
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-light', 'text-dark'));
+                this.classList.add('bg-light', 'text-dark');
+            });
+        });
+
+        // Save new product
+        function saveProduct() {
+            const form = document.getElementById('addProductForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            fetch('/admin/add_product', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+
+        // Delete product
+        function deleteProduct(productId) {
+            if (confirm('Удалить этот товар?')) {
+                fetch(`/admin/delete_product/${productId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+
+        // Import from Shein
+        function importFromShein() {
+            const query = document.getElementById('sheinQuery').value;
+            const limit = document.getElementById('sheinLimit').value;
+            
+            fetch('/admin/import_shein', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: query, limit: parseInt(limit)})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Успешно добавлено ${data.added} товаров!`);
+                    location.reload();
+                }
+            });
+        }
+
+        // Apply global discount
+        function applyGlobalDiscount() {
+            const discount = document.getElementById('discountPercent').value;
+            
+            if (confirm(`Снизить цены всех товаров на ${discount}%?`)) {
+                fetch('/admin/discount_all', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({discount: parseInt(discount)})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Цены успешно обновлены!');
+                        location.reload();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

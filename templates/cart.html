@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Корзина - TemuClone</title>
+    <title>{{ _["Cart"] }} - TemuClone</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -13,142 +13,446 @@
     <header class="temu-header">
         <div class="container">
             <nav class="navbar navbar-expand-lg">
-                <a class="navbar-brand" href="/">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
                     <span class="brand-text">TemuClone</span>
+                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
                 </a>
-                <div class="header-actions">
+
+                <div class="header-actions ms-auto">
                     {% if session.username %}
-                        <span class="text-white me-3">Привет, {{ session.username }}!</span>
-                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light">
-                            <i class="fas fa-sign-out-alt"></i> Выйти
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('login') }}" class="btn btn-outline-light">
-                            <i class="fas fa-sign-in-alt"></i> Войти
-                        </a>
+                        <div class="user-menu me-3">
+                            <span class="text-white">
+                                <i class="fas fa-user-circle"></i> {{ session.username }}
+                            </span>
+                        </div>
                     {% endif %}
+
+                    <a href="{{ url_for('index') }}" class="btn btn-light me-2">
+                        <i class="fas fa-home"></i> Главная
+                    </a>
                 </div>
             </nav>
         </div>
     </header>
 
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-shopping-cart me-2"></i>Корзина покупок</h3>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div class="card-body">
-                        {% if cart %}
-                            {% for item in cart %}
-                            <div class="cart-item d-flex align-items-center p-3 border-bottom">
-                                <img src="{{ item.image }}" alt="{{ item.name }}" class="cart-item-image me-3">
-                                <div class="flex-grow-1">
-                                    <h5 class="mb-1">{{ item.name }}</h5>
-                                    <p class="text-muted mb-2">{{ item.category }}</p>
-                                    <div class="d-flex align-items-center">
-                                        <div class="quantity-controls me-3">
-                                            <button class="btn btn-sm btn-outline-secondary">-</button>
-                                            <span class="mx-2">1</span>
-                                            <button class="btn btn-sm btn-outline-secondary">+</button>
-                                        </div>
-                                        <div class="price">
-                                            <span class="current-price h5 text-danger">${{ "%.2f"|format(item.price * 0.3) }}</span>
-                                            <span class="old-price text-muted text-decoration-line-through ms-2">${{ "%.2f"|format(item.price) }}</span>
-                                        </div>
-                                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Cart Content -->
+    <section class="cart-section">
+        <div class="container">
+            <div class="cart-header">
+                <h2><i class="fas fa-shopping-cart me-2"></i>{{ _["Cart"] }}</h2>
+                <span class="items-count">{{ cart|length }} товаров</span>
+            </div>
+
+            {% if cart %}
+                <div class="cart-content">
+                    <div class="cart-items">
+                        {% for item in cart %}
+                        <div class="cart-item">
+                            <div class="item-image">
+                                <img src="{{ item.image }}" alt="{{ item.name }}">
+                            </div>
+
+                            <div class="item-details">
+                                <h5 class="item-name">{{ item.name }}</h5>
+                                <p class="item-category">{{ item.category }}</p>
+                                <div class="item-rating">
+                                    <span class="stars">
+                                        {% for i in range(5) %}
+                                            <i class="fas fa-star{% if i >= item.rating %} text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                    </span>
+                                    <span class="rating-value">({{ item.rating }})</span>
                                 </div>
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
+                            </div>
+
+                            <div class="item-price">
+                                {% if item.discount > 0 %}
+                                    <div class="price-original">${{ "%.2f"|format(item.price) }}</div>
+                                    <div class="price-discounted">${{ "%.2f"|format(item.discounted_price) }}</div>
+                                    <div class="discount-badge">-{{ item.discount }}%</div>
+                                {% else %}
+                                    <div class="price-current">${{ "%.2f"|format(item.price) }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="item-quantity">
+                                <button class="btn-quantity" onclick="changeQuantity({{ item.id }}, -1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="quantity">1</span>
+                                <button class="btn-quantity" onclick="changeQuantity({{ item.id }}, 1)">
+                                    <i class="fas fa-plus"></i>
                                 </button>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="empty-cart text-center py-5">
-                                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                                <h4>Ваша корзина пуста</h4>
-                                <p class="text-muted">Добавьте товары для продолжения покупок</p>
-                                <a href="{{ url_for('index') }}" class="btn btn-primary">
-                                    <i class="fas fa-shopping-bag me-2"></i>Начать покупки
+
+                            <div class="item-actions">
+                                <a href="{{ url_for('remove_from_cart', product_id=item.id) }}" class="btn-remove">
+                                    <i class="fas fa-trash"></i>
                                 </a>
                             </div>
-                        {% endif %}
+                        </div>
+                        {% endfor %}
                     </div>
-                </div>
-            </div>
-            
-            {% if cart %}
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Итого к оплате</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Товары ({{ cart|length }}):</span>
-                            <span>${{ "%.2f"|format(cart|sum(attribute='price') * 0.3) }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Доставка:</span>
-                            <span class="text-success">Бесплатно</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Скидка:</span>
-                            <span class="text-success">-${{ "%.2f"|format(cart|sum(attribute='price') * 0.7) }}</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3">
-                            <strong>Итого:</strong>
-                            <strong class="text-danger">${{ "%.2f"|format(cart|sum(attribute='price') * 0.3) }}</strong>
-                        </div>
-                        
-                        <button class="btn btn-primary w-100 mb-2">
-                            <i class="fas fa-credit-card me-2"></i>Оформить заказ
-                        </button>
-                        
-                        <div class="promo-code">
-                            <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Промокод">
-                                <button class="btn btn-outline-secondary">Применить</button>
+
+                    <div class="cart-summary">
+                        <div class="summary-card">
+                            <h4>Итого заказа</h4>
+                            <div class="summary-line">
+                                <span>Товары ({{ cart|length }}):</span>
+                                <span>${{ "%.2f"|format(total) }}</span>
                             </div>
+                            <div class="summary-line">
+                                <span>Доставка:</span>
+                                <span class="text-success">Бесплатно</span>
+                            </div>
+                            <hr>
+                            <div class="summary-total">
+                                <span>К оплате:</span>
+                                <span>${{ "%.2f"|format(total) }}</span>
+                            </div>
+
+                            <button class="btn-checkout">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Оформить заказ
+                            </button>
+
+                            <a href="{{ url_for('clear_cart') }}" class="btn-clear">
+                                <i class="fas fa-trash me-2"></i>
+                                Очистить корзину
+                            </a>
                         </div>
                     </div>
                 </div>
-                
-                <div class="mt-3">
-                    <a href="{{ url_for('clear_cart') }}" class="btn btn-outline-danger w-100 mb-2">
-                        <i class="fas fa-trash me-2"></i>Очистить корзину
-                    </a>
-                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary w-100">
-                        <i class="fas fa-arrow-left me-2"></i>Продолжить покупки
+            {% else %}
+                <div class="empty-cart">
+                    <div class="empty-cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3>Корзина пуста</h3>
+                    <p>Добавьте товары, чтобы продолжить покупки</p>
+                    <a href="{{ url_for('index') }}" class="btn-continue-shopping">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Продолжить покупки
                     </a>
                 </div>
-            </div>
             {% endif %}
         </div>
-    </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function changeQuantity(productId, change) {
+            // Здесь можно добавить логику изменения количества
+            console.log('Change quantity for product', productId, 'by', change);
+        }
+    </script>
 
     <style>
-        .cart-item-image {
+        .cart-section {
+            padding: 40px 0;
+            background: var(--background-gray);
+            min-height: 60vh;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .cart-header h2 {
+            margin: 0;
+            color: var(--dark-text);
+        }
+
+        .items-count {
+            color: var(--light-text);
+            font-weight: 600;
+        }
+
+        .cart-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .cart-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .item-image img {
             width: 80px;
             height: 80px;
             object-fit: cover;
             border-radius: 10px;
         }
-        
-        .quantity-controls {
+
+        .item-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--dark-text);
+        }
+
+        .item-category {
+            color: var(--light-text);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .item-rating .stars {
+            color: #FFD700;
+            font-size: 14px;
+        }
+
+        .rating-value {
+            color: var(--light-text);
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .item-price {
+            text-align: center;
+        }
+
+        .price-original {
+            text-decoration: line-through;
+            color: var(--light-text);
+            font-size: 14px;
+        }
+
+        .price-discounted,
+        .price-current {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+
+        .discount-badge {
+            background: var(--accent-red);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .item-quantity {
             display: flex;
             align-items: center;
+            gap: 10px;
         }
-        
-        .quantity-controls button {
+
+        .btn-quantity {
             width: 30px;
             height: 30px;
+            border: 1px solid var(--border-light);
+            background: white;
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-quantity:hover {
+            background: var(--primary-orange);
+            color: white;
+            border-color: var(--primary-orange);
+        }
+
+        .quantity {
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .btn-remove {
+            color: var(--accent-red);
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-remove:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+
+        .summary-card h4 {
+            margin-bottom: 20px;
+            color: var(--dark-text);
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: var(--light-text);
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 25px;
+        }
+
+        .btn-checkout {
+            background: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
+            border: none;
+            color: white;
+            border-radius: 25px;
+            padding: 15px 25px;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 111, 67, 0.4);
+        }
+
+        .btn-clear {
+            background: transparent;
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            width: 100%;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-clear:hover {
+            background: var(--accent-red);
+            color: white;
+            text-decoration: none;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .empty-cart-icon {
+            font-size: 4rem;
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .empty-cart h3 {
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+
+        .empty-cart p {
+            color: var(--light-text);
+            margin-bottom: 30px;
+        }
+
+        .btn-continue-shopping {
+            background: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
+            border: none;
+            color: white;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-continue-shopping:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 111, 67, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .cart-content {
+                grid-template-columns: 1fr;
+            }
+
+            .cart-item {
+                grid-template-columns: auto 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 15px;
+            }
+
+            .item-image {
+                grid-row: 1 / 4;
+            }
+
+            .item-details {
+                grid-column: 2;
+            }
+
+            .item-price,
+            .item-quantity,
+            .item-actions {
+                grid-column: 2;
+                justify-self: start;
+            }
         }
     </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
