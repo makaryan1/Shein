@@ -25,6 +25,12 @@ def init_user_db():
                   is_admin INTEGER DEFAULT 0,
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
+    # Добавляем колонку is_admin если её нет
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Колонка уже существует
+    
     # Создаем админа если его нет
     admin_exists = c.execute("SELECT COUNT(*) FROM users WHERE is_admin = 1").fetchone()[0]
     if admin_exists == 0:
