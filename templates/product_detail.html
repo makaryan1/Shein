@@ -1,0 +1,484 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} - TemuClone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="temu-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <span class="brand-text">TemuClone</span>
+                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
+                </a>
+
+                <div class="search-container mx-auto">
+                    <form class="d-flex" method="GET" action="{{ url_for('search') }}">
+                        <input class="form-control search-input" type="search" name="q" placeholder="Поиск товаров..." aria-label="Search">
+                        <button class="btn btn-search" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="header-actions">
+                    {% if session.username %}
+                        <div class="dropdown me-3">
+                            <a class="btn btn-user dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user"></i> {{ session.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}">Профиль</a></li>
+                                {% if session.is_admin %}
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}">Админ панель</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Выйти</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-user me-2">
+                            <i class="fas fa-sign-in-alt"></i> Войти
+                        </a>
+                    {% endif %}
+
+                    <a href="{{ url_for('cart') }}" class="cart-btn">
+                        <i class="fas fa-shopping-cart"></i>
+                        {% if session.get('cart') %}
+                            <span class="cart-count">{{ session.cart|length }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Product Detail -->
+    <section class="product-detail-section">
+        <div class="container">
+            <div class="row">
+                <!-- Product Images -->
+                <div class="col-md-6">
+                    <div class="product-images">
+                        <div class="main-image">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="img-fluid">
+                            {% if product.discount > 0 %}
+                                <div class="discount-badge">-{{ product.discount }}%</div>
+                            {% endif %}
+                        </div>
+                        <div class="thumbnail-images">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail active">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="col-md-6">
+                    <div class="product-info">
+                        <h1 class="product-title">{{ product.name }}</h1>
+                        
+                        <div class="product-rating">
+                            <div class="stars">
+                                {% for i in range(5) %}
+                                    <i class="fas fa-star{% if i >= product.rating %} text-muted{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">({{ product.rating }}) • 1,234 отзывов</span>
+                        </div>
+
+                        <div class="product-price">
+                            {% if product.discount > 0 %}
+                                <span class="old-price">${{ "%.2f"|format(product.price) }}</span>
+                                <span class="current-price">${{ "%.2f"|format(product.price * (1 - product.discount / 100)) }}</span>
+                                <span class="savings">Экономия: ${{ "%.2f"|format(product.price * product.discount / 100) }}</span>
+                            {% else %}
+                                <span class="current-price">${{ "%.2f"|format(product.price) }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="product-description">
+                            <h4>Описание</h4>
+                            <p>{{ product.description }}</p>
+                        </div>
+
+                        <div class="product-features">
+                            <h4>Характеристики</h4>
+                            <ul>
+                                <li><i class="fas fa-check text-success"></i> Бесплатная доставка</li>
+                                <li><i class="fas fa-check text-success"></i> Гарантия качества</li>
+                                <li><i class="fas fa-check text-success"></i> Возврат в течение 30 дней</li>
+                                <li><i class="fas fa-check text-success"></i> Поддержка 24/7</li>
+                            </ul>
+                        </div>
+
+                        <div class="product-actions">
+                            <div class="quantity-selector">
+                                <label>Количество:</label>
+                                <div class="quantity-controls">
+                                    <button class="btn-quantity" onclick="changeQuantity(-1)">-</button>
+                                    <span class="quantity" id="quantity">1</span>
+                                    <button class="btn-quantity" onclick="changeQuantity(1)">+</button>
+                                </div>
+                            </div>
+
+                            <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="btn btn-add-to-cart">
+                                <i class="fas fa-cart-plus"></i> Добавить в корзину
+                            </a>
+
+                            <button class="btn btn-wishlist">
+                                <i class="fas fa-heart"></i> В избранное
+                            </button>
+                        </div>
+
+                        <div class="delivery-info">
+                            <h4>Доставка</h4>
+                            <div class="delivery-options">
+                                <div class="delivery-option">
+                                    <i class="fas fa-truck"></i>
+                                    <span>Стандартная доставка: 5-7 дней</span>
+                                </div>
+                                <div class="delivery-option">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>Экспресс доставка: 1-3 дня</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Products -->
+            {% if similar_products %}
+                <div class="similar-products">
+                    <h3>Похожие товары</h3>
+                    <div class="row">
+                        {% for product in similar_products %}
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="product-card">
+                                    <div class="product-image">
+                                        <img src="{{ product.image }}" alt="{{ product.name }}">
+                                        {% if product.discount > 0 %}
+                                            <div class="product-badges">
+                                                <span class="badge-sale">-{{ product.discount }}%</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="product-info">
+                                        <h5 class="product-name">{{ product.name }}</h5>
+                                        <div class="product-rating">
+                                            <div class="stars">
+                                                {% for i in range(5) %}
+                                                    <i class="fas fa-star{% if i >= product.rating %} text-muted{% endif %}"></i>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="product-price">
+                                            {% if product.discount > 0 %}
+                                                <span class="old-price">${{ "%.2f"|format(product.price) }}</span>
+                                                <span class="current-price">${{ "%.2f"|format(product.price * (1 - product.discount / 100)) }}</span>
+                                            {% else %}
+                                                <span class="current-price">${{ "%.2f"|format(product.price) }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary btn-sm">
+                                            Подробнее
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let quantity = 1;
+
+        function changeQuantity(change) {
+            quantity = Math.max(1, quantity + change);
+            document.getElementById('quantity').textContent = quantity;
+        }
+
+        // Thumbnail image switching
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                document.querySelector('.thumbnail.active').classList.remove('active');
+                this.classList.add('active');
+                document.querySelector('.main-image img').src = this.src;
+            });
+        });
+    </script>
+
+    <style>
+        .product-detail-section {
+            padding: 40px 0;
+            background: var(--background-gray);
+        }
+
+        .product-images {
+            position: sticky;
+            top: 20px;
+        }
+
+        .main-image {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .main-image img {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .discount-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--accent-red);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .thumbnail-images {
+            display: flex;
+            gap: 10px;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .thumbnail.active,
+        .thumbnail:hover {
+            border-color: var(--primary-orange);
+        }
+
+        .product-info {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .product-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark-text);
+        }
+
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stars {
+            color: #FFD700;
+            font-size: 18px;
+        }
+
+        .rating-text {
+            color: var(--light-text);
+        }
+
+        .product-price {
+            margin-bottom: 30px;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: var(--light-text);
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+
+        .current-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-right: 15px;
+        }
+
+        .savings {
+            color: var(--primary-orange);
+            font-weight: 600;
+        }
+
+        .product-description,
+        .product-features {
+            margin-bottom: 30px;
+        }
+
+        .product-description h4,
+        .product-features h4 {
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+
+        .product-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .product-features li {
+            margin-bottom: 8px;
+        }
+
+        .product-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .quantity-selector label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-quantity {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-light);
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-quantity:hover {
+            background: var(--primary-orange);
+            color: white;
+            border-color: var(--primary-orange);
+        }
+
+        .quantity {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .btn-add-to-cart {
+            background: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add-to-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 111, 67, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-wishlist {
+            background: white;
+            border: 2px solid var(--primary-orange);
+            color: var(--primary-orange);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-wishlist:hover {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .delivery-info h4 {
+            color: var(--dark-text);
+            margin-bottom: 15px;
+        }
+
+        .delivery-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .delivery-option i {
+            color: var(--primary-orange);
+            width: 20px;
+        }
+
+        .similar-products {
+            margin-top: 60px;
+        }
+
+        .similar-products h3 {
+            color: var(--dark-text);
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .product-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .product-actions .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .thumbnail-images {
+                justify-content: center;
+            }
+        }
+    </style>
+</body>
+</html>

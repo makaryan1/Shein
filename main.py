@@ -2,149 +2,157 @@
 from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
 import json
 import os
-import sqlite3
+from dotenv import load_dotenv
+from supabase import create_client, Client
+from authlib.integrations.flask_client import OAuth
 import hashlib
-import requests
-from pathlib import Path
-from bs4 import BeautifulSoup
 import random
 import time
+from datetime import datetime, timedelta
+import requests
+import uuid
+
+# Загружаем переменные окружения
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-123'
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-fallback-secret-key')
 
-# Инициализация базы данных пользователей
-def init_user_db():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  username TEXT UNIQUE NOT NULL,
-                  email TEXT UNIQUE NOT NULL,
-                  password_hash TEXT NOT NULL,
-                  is_admin INTEGER DEFAULT 0,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    
-    # Добавляем колонку is_admin если её нет
+# Инициализация Supabase
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
+supabase: Client = create_client(supabase_url, supabase_key)
+
+# Инициализация OAuth
+oauth = OAuth(app)
+
+# Настройка Google OAuth
+google = oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
+
+# Настройка Facebook OAuth
+facebook = oauth.register(
+    name='facebook',
+    client_id=os.getenv('FACEBOOK_APP_ID'),
+    client_secret=os.getenv('FACEBOOK_APP_SECRET'),
+    access_token_url='https://graph.facebook.com/oauth/access_token',
+    authorize_url='https://www.facebook.com/dialog/oauth',
+    api_base_url='https://graph.facebook.com/',
+    client_kwargs={'scope': 'email'},
+)
+
+# Функции для работы с пользователями
+def create_user_in_supabase(email, username, password=None, provider=None, provider_id=None):
     try:
-        c.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass  # Колонка уже существует
-    
-    # Создаем админа если его нет
-    admin_exists = c.execute("SELECT COUNT(*) FROM users WHERE is_admin = 1").fetchone()[0]
-    if admin_exists == 0:
-        admin_hash = hashlib.sha256('admin123'.encode()).hexdigest()
-        c.execute("INSERT INTO users (username, email, password_hash, is_admin) VALUES (?, ?, ?, ?)",
-                  ('admin', 'admin@site.com', admin_hash, 1))
-    
-    conn.commit()
-    conn.close()
-
-# Инициализация базы данных товаров
-def init_products_db():
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS products
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT NOT NULL,
-                  price REAL NOT NULL,
-                  image TEXT NOT NULL,
-                  category TEXT NOT NULL,
-                  description TEXT,
-                  rating REAL DEFAULT 4.5,
-                  discount INTEGER DEFAULT 0,
-                  in_stock INTEGER DEFAULT 1,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    
-    # Добавляем тестовые товары если их нет
-    count = c.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-    if count == 0:
-        test_products = [
-            ("Смартфон iPhone 15", 999.99, "https://via.placeholder.com/300x300?text=iPhone+15", "Электроника", "Новейший iPhone с отличной камерой", 4.8, 10),
-            ("Наушники AirPods Pro", 249.99, "https://via.placeholder.com/300x300?text=AirPods", "Электроника", "Беспроводные наушники с шумоподавлением", 4.7, 15),
-            ("Кроссовки Nike", 129.99, "https://via.placeholder.com/300x300?text=Nike+Shoes", "Одежда", "Удобные спортивные кроссовки", 4.6, 25),
-            ("Платье летнее", 45.99, "https://via.placeholder.com/300x300?text=Summer+Dress", "Одежда", "Легкое летнее платье", 4.5, 30),
-            ("Умные часы", 199.99, "https://via.placeholder.com/300x300?text=Smart+Watch", "Электроника", "Спортивные умные часы", 4.4, 20),
-            ("Сумка женская", 79.99, "https://via.placeholder.com/300x300?text=Handbag", "Аксессуары", "Стильная женская сумка", 4.3, 35)
-        ]
+        user_data = {
+            'email': email,
+            'username': username,
+            'password_hash': hashlib.sha256(password.encode()).hexdigest() if password else None,
+            'provider': provider or 'email',
+            'provider_id': provider_id,
+            'is_admin': False,
+            'created_at': datetime.now().isoformat()
+        }
         
-        for product in test_products:
-            c.execute("INSERT INTO products (name, price, image, category, description, rating, discount) VALUES (?, ?, ?, ?, ?, ?, ?)", product)
-    
-    conn.commit()
-    conn.close()
+        result = supabase.table('users').insert(user_data).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error creating user: {e}")
+        return None
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(password, hash):
-    return hashlib.sha256(password.encode()).hexdigest() == hash
-
-def create_user(username, email, password):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
+def get_user_by_email(email):
     try:
-        password_hash = hash_password(password)
-        c.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
-                  (username, email, password_hash))
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
+        result = supabase.table('users').select('*').eq('email', email).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error getting user: {e}")
+        return None
 
-def verify_user(email, password):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("SELECT id, username, password_hash, is_admin FROM users WHERE email = ?", (email,))
-    user = c.fetchone()
-    conn.close()
-    
-    if user and verify_password(password, user[2]):
-        return {'id': user[0], 'username': user[1], 'is_admin': user[3]}
-    return None
+def verify_password(password, hash_password):
+    return hashlib.sha256(password.encode()).hexdigest() == hash_password
 
-def get_products():
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM products WHERE in_stock = 1 ORDER BY created_at DESC")
-    products = []
-    for row in c.fetchall():
-        products.append({
-            'id': row[0],
-            'name': row[1],
-            'price': row[2],
-            'image': row[3],
-            'category': row[4],
-            'description': row[5],
-            'rating': row[6],
-            'discount': row[7]
-        })
-    conn.close()
-    return products
+# Функции для работы с товарами
+def get_products(limit=None, category=None, search=None):
+    try:
+        query = supabase.table('products').select('*').eq('in_stock', True)
+        
+        if category:
+            query = query.eq('category', category)
+        
+        if search:
+            query = query.ilike('name', f'%{search}%')
+        
+        if limit:
+            query = query.limit(limit)
+        
+        result = query.execute()
+        return result.data
+    except Exception as e:
+        print(f"Error getting products: {e}")
+        return []
 
 def get_product_by_id(product_id):
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM products WHERE id = ? AND in_stock = 1", (product_id,))
-    row = c.fetchone()
-    conn.close()
-    if row:
-        return {
-            'id': row[0],
-            'name': row[1],
-            'price': row[2],
-            'image': row[3],
-            'category': row[4],
-            'description': row[5],
-            'rating': row[6],
-            'discount': row[7]
-        }
-    return None
+    try:
+        result = supabase.table('products').select('*').eq('id', product_id).eq('in_stock', True).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Error getting product: {e}")
+        return None
 
-# Загружаем переводы
+def get_categories():
+    try:
+        result = supabase.table('products').select('category').execute()
+        categories = list(set([item['category'] for item in result.data]))
+        return categories
+    except Exception as e:
+        print(f"Error getting categories: {e}")
+        return []
+
+# Функции для работы с корзиной
+def get_cart_items(user_id):
+    try:
+        result = supabase.table('cart').select('*, products(*)').eq('user_id', user_id).execute()
+        return result.data
+    except Exception as e:
+        print(f"Error getting cart items: {e}")
+        return []
+
+def add_to_cart_db(user_id, product_id, quantity=1):
+    try:
+        # Проверяем, есть ли уже товар в корзине
+        existing = supabase.table('cart').select('*').eq('user_id', user_id).eq('product_id', product_id).execute()
+        
+        if existing.data:
+            # Обновляем количество
+            supabase.table('cart').update({'quantity': existing.data[0]['quantity'] + quantity}).eq('id', existing.data[0]['id']).execute()
+        else:
+            # Добавляем новый товар
+            supabase.table('cart').insert({
+                'user_id': user_id,
+                'product_id': product_id,
+                'quantity': quantity,
+                'created_at': datetime.now().isoformat()
+            }).execute()
+        
+        return True
+    except Exception as e:
+        print(f"Error adding to cart: {e}")
+        return False
+
+# Языки и переводы
+LANGUAGES = {
+    'en': {'name': 'English', 'icon': '🇺🇸'},
+    'ru': {'name': 'Русский', 'icon': '🇷🇺'},
+    'ka': {'name': 'ქართული', 'icon': '🇬🇪'}
+}
+
 def load_translations(lang='en'):
     try:
         with open(f'translations/{lang}.json', 'r', encoding='utf-8') as f:
@@ -153,99 +161,134 @@ def load_translations(lang='en'):
         with open('translations/en.json', 'r', encoding='utf-8') as f:
             return json.load(f)
 
-# Языки
-LANGUAGES = {
-    'en': {'name': 'English', 'icon': '🇺🇸'},
-    'ru': {'name': 'Русский', 'icon': '🇷🇺'},
-    'ka': {'name': 'ქართული', 'icon': '🇬🇪'}
-}
-
-# Функция для получения товаров с Shein (имитация)
-def scrape_shein_products(query="clothes", limit=10):
-    """Имитация скрапинга товаров с Shein"""
-    fake_products = []
-    categories = ["Одежда", "Обувь", "Аксессуары", "Красота", "Дом"]
-    
-    for i in range(limit):
-        product = {
-            "name": f"Shein {query.capitalize()} {i+1}",
-            "price": round(random.uniform(15.99, 199.99), 2),
-            "image": f"https://picsum.photos/300/300?random={random.randint(1000, 9999)}",
-            "category": random.choice(categories),
-            "description": f"Стильный {query} от Shein",
-            "rating": round(random.uniform(4.0, 5.0), 1),
-            "discount": random.randint(20, 70)
-        }
-        fake_products.append(product)
-    
-    return fake_products
-
+# Главная страница
 @app.route('/')
 def index():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    products = get_products()
+    
+    # Получаем товары
+    products = get_products(limit=20)
+    categories = get_categories()
+    
+    # Получаем популярные товары
+    popular_products = get_products(limit=8)
     
     return render_template('index.html', 
                          products=products,
+                         categories=categories,
+                         popular_products=popular_products,
                          cart_count=len(session.get('cart', [])),
                          _=translations,
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
+# Страница товара
+@app.route('/product/<int:product_id>')
+def product_detail(product_id):
+    current_lang = session.get('language', 'en')
+    translations = load_translations(current_lang)
+    
+    product = get_product_by_id(product_id)
+    if not product:
+        flash('Товар не найден', 'error')
+        return redirect(url_for('index'))
+    
+    # Похожие товары
+    similar_products = get_products(limit=4, category=product['category'])
+    similar_products = [p for p in similar_products if p['id'] != product_id]
+    
+    return render_template('product_detail.html',
+                         product=product,
+                         similar_products=similar_products,
+                         _=translations,
+                         current_lang=current_lang,
+                         languages=LANGUAGES)
+
+# Поиск
+@app.route('/search')
+def search():
+    current_lang = session.get('language', 'en')
+    translations = load_translations(current_lang)
+    
+    query = request.args.get('q', '')
+    category = request.args.get('category', '')
+    
+    products = get_products(search=query, category=category if category else None)
+    
+    return render_template('search_results.html',
+                         products=products,
+                         query=query,
+                         category=category,
+                         categories=get_categories(),
+                         _=translations,
+                         current_lang=current_lang,
+                         languages=LANGUAGES)
+
+# Корзина
+@app.route('/cart')
+def cart():
+    current_lang = session.get('language', 'en')
+    translations = load_translations(current_lang)
+    
+    if 'user_id' in session:
+        # Для зарегистрированных пользователей
+        cart_items = get_cart_items(session['user_id'])
+        total = sum(item['quantity'] * item['products']['price'] * (1 - item['products']['discount'] / 100) for item in cart_items)
+    else:
+        # Для гостей
+        cart_ids = session.get('cart', [])
+        cart_items = []
+        total = 0
+        
+        for product_id in cart_ids:
+            product = get_product_by_id(int(product_id))
+            if product:
+                discounted_price = product['price'] * (1 - product['discount'] / 100)
+                cart_items.append({
+                    'products': product,
+                    'quantity': 1,
+                    'total_price': discounted_price
+                })
+                total += discounted_price
+    
+    return render_template('cart.html',
+                         cart_items=cart_items,
+                         total=total,
+                         _=translations,
+                         current_lang=current_lang,
+                         languages=LANGUAGES)
+
+# Добавление в корзину
+@app.route('/add_to_cart/<int:product_id>')
+def add_to_cart(product_id):
+    if 'user_id' in session:
+        # Для зарегистрированных пользователей
+        if add_to_cart_db(session['user_id'], product_id):
+            flash('Товар добавлен в корзину!', 'success')
+        else:
+            flash('Ошибка при добавлении товара', 'error')
+    else:
+        # Для гостей
+        if 'cart' not in session:
+            session['cart'] = []
+        
+        if str(product_id) not in session['cart']:
+            session['cart'].append(str(product_id))
+            flash('Товар добавлен в корзину!', 'success')
+        else:
+            flash('Товар уже в корзине!', 'info')
+    
+    return redirect(url_for('index'))
+
+# Языки
 @app.route('/set_language/<language>')
 def set_language(language):
     if language in LANGUAGES:
         session['language'] = language
     return redirect(url_for('index'))
 
-@app.route('/cart')
-def cart():
-    current_lang = session.get('language', 'en')
-    translations = load_translations(current_lang)
-    cart_ids = session.get('cart', [])
-    cart_items = []
-    total = 0
-    
-    for product_id in cart_ids:
-        product = get_product_by_id(int(product_id))
-        if product:
-            discounted_price = product['price'] * (1 - product['discount'] / 100)
-            product['discounted_price'] = discounted_price
-            cart_items.append(product)
-            total += discounted_price
-    
-    return render_template('cart.html', 
-                         cart=cart_items,
-                         total=total,
-                         _=translations,
-                         current_lang=current_lang,
-                         languages=LANGUAGES)
-
-@app.route('/add_to_cart/<int:product_id>')
-def add_to_cart(product_id):
-    if 'cart' not in session:
-        session['cart'] = []
-    if str(product_id) not in session['cart']:
-        session['cart'].append(str(product_id))
-        flash('Товар добавлен в корзину!', 'success')
-    else:
-        flash('Товар уже в корзине!', 'info')
-    return redirect(url_for('index'))
-
-@app.route('/remove_from_cart/<int:product_id>')
-def remove_from_cart(product_id):
-    if 'cart' in session and str(product_id) in session['cart']:
-        session['cart'].remove(str(product_id))
-        flash('Товар удален из корзины!', 'info')
-    return redirect(url_for('cart'))
-
-@app.route('/clear_cart')
-def clear_cart():
-    session.pop('cart', None)
-    flash('Корзина очищена!', 'info')
-    return redirect(url_for('cart'))
-
+# Регистрация
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     current_lang = session.get('language', 'en')
@@ -259,17 +302,20 @@ def register():
         
         if password != confirm_password:
             flash('Пароли не совпадают!', 'error')
-        elif create_user(username, email, password):
-            flash('Регистрация успешна! Теперь войдите в систему.', 'success')
-            return redirect(url_for('login'))
         else:
-            flash('Пользователь с таким email уже существует!', 'error')
+            user = create_user_in_supabase(email, username, password)
+            if user:
+                flash('Регистрация успешна! Теперь войдите в систему.', 'success')
+                return redirect(url_for('login'))
+            else:
+                flash('Ошибка регистрации. Возможно, пользователь уже существует.', 'error')
     
-    return render_template('register.html', 
+    return render_template('register.html',
                          _=translations,
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
+# Вход
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     current_lang = session.get('language', 'en')
@@ -279,11 +325,19 @@ def login():
         email = request.form['email']
         password = request.form['password']
         
-        user = verify_user(email, password)
-        if user:
+        user = get_user_by_email(email)
+        if user and verify_password(password, user['password_hash']):
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['email'] = user['email']
             session['is_admin'] = user['is_admin']
+            
+            # Переносим корзину гостя в базу данных
+            if 'cart' in session:
+                for product_id in session['cart']:
+                    add_to_cart_db(user['id'], int(product_id))
+                session.pop('cart', None)
+            
             flash(f'Добро пожаловать, {user["username"]}!', 'success')
             
             if user['is_admin']:
@@ -297,12 +351,85 @@ def login():
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
+# Google OAuth
+@app.route('/auth/google')
+def google_auth():
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    token = google.authorize_access_token()
+    user_info = token.get('userinfo')
+    
+    if user_info:
+        email = user_info['email']
+        name = user_info['name']
+        
+        # Проверяем, есть ли пользователь
+        user = get_user_by_email(email)
+        
+        if not user:
+            # Создаем нового пользователя
+            user = create_user_in_supabase(email, name, provider='google', provider_id=user_info['sub'])
+        
+        if user:
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['email'] = user['email']
+            session['is_admin'] = user['is_admin']
+            
+            flash(f'Добро пожаловать, {user["username"]}!', 'success')
+            return redirect(url_for('index'))
+    
+    flash('Ошибка авторизации через Google', 'error')
+    return redirect(url_for('login'))
+
+# Facebook OAuth
+@app.route('/auth/facebook')
+def facebook_auth():
+    redirect_uri = url_for('facebook_callback', _external=True)
+    return facebook.authorize_redirect(redirect_uri)
+
+@app.route('/auth/facebook/callback')
+def facebook_callback():
+    token = facebook.authorize_access_token()
+    
+    if token:
+        resp = facebook.get('me?fields=id,name,email')
+        user_info = resp.json()
+        
+        email = user_info.get('email')
+        name = user_info.get('name')
+        
+        if email:
+            # Проверяем, есть ли пользователь
+            user = get_user_by_email(email)
+            
+            if not user:
+                # Создаем нового пользователя
+                user = create_user_in_supabase(email, name, provider='facebook', provider_id=user_info['id'])
+            
+            if user:
+                session['user_id'] = user['id']
+                session['username'] = user['username']
+                session['email'] = user['email']
+                session['is_admin'] = user['is_admin']
+                
+                flash(f'Добро пожаловать, {user["username"]}!', 'success')
+                return redirect(url_for('index'))
+    
+    flash('Ошибка авторизации через Facebook', 'error')
+    return redirect(url_for('login'))
+
+# Выход
 @app.route('/logout')
 def logout():
     session.clear()
     flash('Вы вышли из системы!', 'info')
     return redirect(url_for('index'))
 
+# Профиль
 @app.route('/profile')
 def profile():
     if 'user_id' not in session:
@@ -317,190 +444,131 @@ def profile():
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
-# АДМИН ПАНЕЛЬ
+# Админ панель
 @app.route('/admin')
 def admin_panel():
     if not session.get('is_admin'):
         flash('Доступ запрещен!', 'error')
         return redirect(url_for('index'))
     
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM products ORDER BY created_at DESC")
-    products = []
-    for row in c.fetchall():
-        products.append({
-            'id': row[0], 'name': row[1], 'price': row[2], 'image': row[3],
-            'category': row[4], 'description': row[5], 'rating': row[6],
-            'discount': row[7], 'in_stock': row[8]
-        })
-    conn.close()
+    products = get_products()
+    categories = get_categories()
     
-    return render_template('admin_panel.html', products=products)
+    # Статистика
+    try:
+        total_products = len(products)
+        total_users = len(supabase.table('users').select('id').execute().data)
+        total_orders = len(supabase.table('orders').select('id').execute().data) if supabase.table('orders').select('id').execute().data else 0
+        
+        stats = {
+            'total_products': total_products,
+            'total_users': total_users,
+            'total_orders': total_orders
+        }
+    except:
+        stats = {
+            'total_products': 0,
+            'total_users': 0,
+            'total_orders': 0
+        }
+    
+    return render_template('admin_panel.html',
+                         products=products,
+                         categories=categories,
+                         stats=stats)
 
+# Добавление товара (админ)
 @app.route('/admin/add_product', methods=['POST'])
 def admin_add_product():
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
     
-    data = request.json
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("""INSERT INTO products (name, price, image, category, description, rating, discount) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
-              (data['name'], data['price'], data['image'], data['category'], 
-               data['description'], data.get('rating', 4.5), data.get('discount', 0)))
-    conn.commit()
-    conn.close()
-    
-    flash('Товар добавлен!', 'success')
-    return jsonify({'success': True})
+    try:
+        data = request.json
+        result = supabase.table('products').insert({
+            'name': data['name'],
+            'price': data['price'],
+            'image': data['image'],
+            'category': data['category'],
+            'description': data['description'],
+            'rating': data.get('rating', 4.5),
+            'discount': data.get('discount', 0),
+            'in_stock': True,
+            'created_at': datetime.now().isoformat()
+        }).execute()
+        
+        if result.data:
+            return jsonify({'success': True, 'product': result.data[0]})
+        else:
+            return jsonify({'error': 'Ошибка при добавлении товара'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+# Редактирование товара (админ)
 @app.route('/admin/edit_product/<int:product_id>', methods=['POST'])
 def admin_edit_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
     
-    data = request.json
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("""UPDATE products SET name=?, price=?, image=?, category=?, 
-                 description=?, rating=?, discount=? WHERE id=?""",
-              (data['name'], data['price'], data['image'], data['category'],
-               data['description'], data['rating'], data['discount'], product_id))
-    conn.commit()
-    conn.close()
-    
-    flash('Товар обновлен!', 'success')
-    return jsonify({'success': True})
+    try:
+        data = request.json
+        result = supabase.table('products').update({
+            'name': data['name'],
+            'price': data['price'],
+            'image': data['image'],
+            'category': data['category'],
+            'description': data['description'],
+            'rating': data['rating'],
+            'discount': data['discount']
+        }).eq('id', product_id).execute()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+# Удаление товара (админ)
 @app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
 def admin_delete_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
     
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("UPDATE products SET in_stock = 0 WHERE id = ?", (product_id,))
-    conn.commit()
-    conn.close()
-    
-    flash('Товар удален!', 'success')
-    return jsonify({'success': True})
-
-@app.route('/admin/discount_all', methods=['POST'])
-def admin_discount_all():
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Доступ запрещен'}), 403
-    
-    discount = request.json.get('discount', 20)
-    conn = sqlite3.connect('products.db')
-    c = conn.cursor()
-    c.execute("UPDATE products SET price = price * ? WHERE in_stock = 1", ((100 - discount) / 100,))
-    conn.commit()
-    conn.close()
-    
-    flash(f'Цены снижены на {discount}%!', 'success')
-    return jsonify({'success': True})
-
-@app.route('/admin/import_shein', methods=['POST'])
-def admin_import_shein():
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Доступ запрещен'}), 403
-    
-    query = request.json.get('query', 'clothes')
-    limit = request.json.get('limit', 10)
-    
     try:
-        products = scrape_shein_products(query, limit)
-        
-        conn = sqlite3.connect('products.db')
-        c = conn.cursor()
-        
-        added_count = 0
-        for product in products:
-            c.execute("""INSERT INTO products (name, price, image, category, description, rating, discount) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                      (product['name'], product['price'], product['image'], product['category'],
-                       product['description'], product['rating'], product['discount']))
-            added_count += 1
-        
-        conn.commit()
-        conn.close()
-        
-        flash(f'Добавлено {added_count} товаров из Shein!', 'success')
-        return jsonify({'success': True, 'added': added_count})
-    
+        supabase.table('products').update({'in_stock': False}).eq('id', product_id).execute()
+        return jsonify({'success': True})
     except Exception as e:
-        flash(f'Ошибка импорта: {str(e)}', 'error')
         return jsonify({'error': str(e)}), 500
 
-@app.route('/search')
-def search():
-    query = request.args.get('q', '')
-    current_lang = session.get('language', 'en')
-    translations = load_translations(current_lang)
+# Импорт товаров
+@app.route('/admin/import_products', methods=['POST'])
+def admin_import_products():
+    if not session.get('is_admin'):
+        return jsonify({'error': 'Доступ запрещен'}), 403
     
-    if query:
-        conn = sqlite3.connect('products.db')
-        c = conn.cursor()
-        c.execute("SELECT * FROM products WHERE name LIKE ? AND in_stock = 1", (f'%{query}%',))
-        products = []
-        for row in c.fetchall():
-            products.append({
-                'id': row[0], 'name': row[1], 'price': row[2], 'image': row[3],
-                'category': row[4], 'description': row[5], 'rating': row[6], 'discount': row[7]
-            })
-        conn.close()
-    else:
-        products = []
-    
-    return render_template('search_results.html',
-                         products=products,
-                         query=query,
-                         cart_count=len(session.get('cart', [])),
-                         _=translations,
-                         current_lang=current_lang,
-                         languages=LANGUAGES)
+    try:
+        # Генерируем фейковые товары для демонстрации
+        fake_products = []
+        categories = ["Электроника", "Одежда", "Дом", "Красота", "Спорт"]
+        
+        for i in range(10):
+            product = {
+                'name': f'Товар {i+1}',
+                'price': round(random.uniform(10, 500), 2),
+                'image': f'https://picsum.photos/400/400?random={random.randint(1, 1000)}',
+                'category': random.choice(categories),
+                'description': f'Описание товара {i+1}',
+                'rating': round(random.uniform(3.5, 5.0), 1),
+                'discount': random.randint(0, 50),
+                'in_stock': True,
+                'created_at': datetime.now().isoformat()
+            }
+            fake_products.append(product)
+        
+        # Вставляем в базу данных
+        result = supabase.table('products').insert(fake_products).execute()
+        
+        return jsonify({'success': True, 'added': len(result.data)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Создаем папки если их нет
-    Path("templates").mkdir(exist_ok=True)
-    Path("static/css").mkdir(exist_ok=True, parents=True)
-    Path("static/js").mkdir(exist_ok=True, parents=True)
-    Path("translations").mkdir(exist_ok=True)
-    
-    # Инициализируем базы данных
-    init_user_db()
-    init_products_db()
-
-    # Создаем файлы переводов если их нет
-    translations_files = {
-        'en.json': {
-            "Online Shopping": "Online Shopping",
-            "Categories": "Categories",
-            "Add to Cart": "Add to Cart",
-            "Cart": "Cart",
-            "Profile": "Profile",
-            "Login": "Login",
-            "Register": "Register",
-            "Search": "Search"
-        },
-        'ru.json': {
-            "Online Shopping": "Онлайн-магазин",
-            "Categories": "Категории",
-            "Add to Cart": "В корзину",
-            "Cart": "Корзина",
-            "Profile": "Профиль",
-            "Login": "Войти",
-            "Register": "Регистрация",
-            "Search": "Поиск"
-        }
-    }
-    
-    for filename, content in translations_files.items():
-        if not os.path.exists(f'translations/{filename}'):
-            with open(f'translations/{filename}', 'w', encoding='utf-8') as f:
-                json.dump(content, f, ensure_ascii=False, indent=2)
-
     app.run(host='0.0.0.0', port=5000, debug=True)
