@@ -27,7 +27,7 @@
             {% for product in products %}
             <div class="col-md-3 mb-4">
                 <div class="card h-100">
-                    <img src="{ product.image }}" class="card-img-top">
+                    <img src="{{ product.image }}" class="card-img-top">
                     <div class="card-body">
                         <h5 class="card-title">{{ product.name }}</h5>
                         <p class="text-danger">{{ product.price }}</p>
