@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .product { border: 1px solid #ddd; padding: 10px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>{{ message }}</h1>
+
+    <h2>Test Products:</h2>
+    {% for product in products %}
+    <div class="product">
+        <h3>{{ product.name }}</h3>
+        <p>Price: ${{ product.price }}</p>
+    </div>
+    {% endfor %}
+
+    <p>If you see this, templates are working!</p>
+</body>
+</html>

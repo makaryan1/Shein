@@ -1,0 +1,49 @@
+<header class="bg-dark text-white sticky-top">
+    <div class="container">
+        <div class="d-flex align-items-center py-2">
+            <a class="navbar-brand text-warning fw-bold fs-4" href="{{ url_for('index') }}">
+                <i class="fas fa-shopping-bag me-2"></i>TEMU CLONE
+            </a>
+
+            <form class="mx-4 flex-grow-1" action="{{ url_for('search') }}" method="get">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="{{ _['Search'] }}">
+                    <button class="btn btn-warning" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+
+            <nav class="d-flex">
+                <div class="dropdown me-3">
+                    <button class="btn btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">
+                        {{ languages[current_lang]['icon'] }} {{ languages[current_lang]['name'] }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for code, lang in languages.items() %}
+                            <li><a class="dropdown-item" href="{{ url_for('set_language', language=code) }}">
+                                {{ lang['icon'] }} {{ lang['name'] }}
+                            </a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ session.get('cart', [])|length }}
+                    </span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="py-2">
+            {% for category in get_categories() %}
+                <a href="{{ url_for('category_view', category_name=category) }}" 
+                   class="text-white text-decoration-none me-3">
+                    {{ category }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</header>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Корзина</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>🛒 Ваша корзина</h1>
+        <div class="row">
+            {% for item in cart %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="{{ item.image }}" class="card-img-top">
+                    <div class="card-body">
+                        <h5>{{ item.name }}</h5>
+                        <p class="text-danger">{{ item.price }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <a href="/clear_cart" class="btn btn-danger">Очистить корзину</a>
+        <a href="/" class="btn btn-primary">На главную</a>
+    </div>
+</body>
+</html>

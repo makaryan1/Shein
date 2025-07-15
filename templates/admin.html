@@ -1,0 +1,38 @@
+<!-- templates/admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>🛠️ Admin Panel</h1>
+    <form method="get" action="/admin">
+      <label>Категория (cat_id):</label>
+      <input type="text" name="cat_id" value="{{ category_id }}">
+      <button type="submit">Загрузить товары</button>
+    </form>
+  </header>
+
+  <main>
+    {% if products %}
+      <form method="post" action="/admin/publish">
+        <ul>
+          {% for p in products %}
+            <li style="margin-bottom: 10px;">
+              <img src="{{ p.img }}" width="100" alt="{{ p.name }}">
+              <strong>{{ p.name }}</strong> — ${{ p.price }}
+              <input type="checkbox" name="publish_ids" value="{{ p.id }}"> Опубликовать
+            </li>
+          {% endfor %}
+        </ul>
+        <button type="submit">Опубликовать выбранные</button>
+      </form>
+    {% else %}
+      <p>Нет товаров. Укажите категорию и нажмите загрузить.</p>
+    {% endif %}
+  </main>
+</body>
+</html>
