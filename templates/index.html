@@ -38,6 +38,41 @@
                         {% endfor %}
                     </div>
                     
+                    {% if session.username %}
+                        <div class="user-menu me-3">
+                            <div class="dropdown">
+                                <button class="btn btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user-circle"></i>
+                                    {{ session.username }}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                        <i class="fas fa-user me-2"></i>Профиль
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="fas fa-shopping-bag me-2"></i>Мои заказы
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="fas fa-heart me-2"></i>Избранное
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="auth-buttons me-3">
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light me-2">
+                                <i class="fas fa-sign-in-alt"></i> Войти
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-light">
+                                <i class="fas fa-user-plus"></i> Регистрация
+                            </a>
+                        </div>
+                    {% endif %}
+                    
                     <a href="{{ url_for('cart') }}" class="cart-btn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count">{{ cart_count }}</span>

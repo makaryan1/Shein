@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - TemuClone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="temu-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="/">
+                    <span class="brand-text">TemuClone</span>
+                </a>
+                <div class="header-actions">
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-light me-2">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </a>
+                    <a href="{{ url_for('cart') }}" class="cart-btn">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count">{{ session.get('cart', [])|length }}</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="profile-avatar mb-3">
+                            <i class="fas fa-user-circle fa-5x text-muted"></i>
+                        </div>
+                        <h5>{{ session.username }}</h5>
+                        <p class="text-muted">Премиум пользователь</p>
+                    </div>
+                </div>
+                
+                <div class="list-group mt-3">
+                    <a href="#" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i> Профиль
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag me-2"></i> Мои заказы
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart me-2"></i> Избранное
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map-marker-alt me-2"></i> Адреса
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-credit-card me-2"></i> Способы оплаты
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog me-2"></i> Настройки
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-user me-2"></i> Информация профиля</h4>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Имя пользователя</label>
+                                    <input type="text" class="form-control" value="{{ session.username }}" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" placeholder="user@example.com">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Телефон</label>
+                                    <input type="tel" class="form-control" placeholder="+7 (999) 123-45-67">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Дата рождения</label>
+                                    <input type="date" class="form-control">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Адрес</label>
+                                <textarea class="form-control" rows="3" placeholder="Введите ваш адрес"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Сохранить изменения
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-line me-2"></i> Статистика покупок</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-primary">24</h3>
+                                    <p>Заказов</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-success">$1,234</h3>
+                                    <p>Потрачено</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-warning">5</h3>
+                                    <p>В избранном</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-info">98%</h3>
+                                    <p>Рейтинг</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
