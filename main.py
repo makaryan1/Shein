@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
 import json
 import os
@@ -18,9 +17,13 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-fallback-secret-key')
 
-# Инициализация Supabase
-supabase_url = os.getenv('SUPABASE_URL')
-supabase_key = os.getenv('SUPABASE_KEY')
+# Конфигурация Supabase
+supabase_url = os.environ.get('SUPABASE_URL')
+supabase_key = os.environ.get('SUPABASE_KEY')
+
+if not supabase_url or not supabase_key:
+    raise ValueError("SUPABASE_URL и SUPABASE_KEY должны быть установлены в Secrets")
+
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # Инициализация OAuth
@@ -60,7 +63,7 @@ def create_user_in_supabase(email, username, password=None, provider=None, provi
             'is_admin': False,
             'created_at': datetime.now().isoformat()
         }
-        
+
         result = supabase.table('users').insert(user_data).execute()
         return result.data[0] if result.data else None
     except Exception as e:
@@ -82,16 +85,16 @@ def verify_password(password, hash_password):
 def get_products(limit=None, category=None, search=None):
     try:
         query = supabase.table('products').select('*').eq('in_stock', True)
-        
+
         if category:
             query = query.eq('category', category)
-        
+
         if search:
             query = query.ilike('name', f'%{search}%')
-        
+
         if limit:
             query = query.limit(limit)
-        
+
         result = query.execute()
         return result.data
     except Exception as e:
@@ -128,7 +131,7 @@ def add_to_cart_db(user_id, product_id, quantity=1):
     try:
         # Проверяем, есть ли уже товар в корзине
         existing = supabase.table('cart').select('*').eq('user_id', user_id).eq('product_id', product_id).execute()
-        
+
         if existing.data:
             # Обновляем количество
             supabase.table('cart').update({'quantity': existing.data[0]['quantity'] + quantity}).eq('id', existing.data[0]['id']).execute()
@@ -140,7 +143,7 @@ def add_to_cart_db(user_id, product_id, quantity=1):
                 'quantity': quantity,
                 'created_at': datetime.now().isoformat()
             }).execute()
-        
+
         return True
     except Exception as e:
         print(f"Error adding to cart: {e}")
@@ -166,14 +169,14 @@ def load_translations(lang='en'):
 def index():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     # Получаем товары
     products = get_products(limit=20)
     categories = get_categories()
-    
+
     # Получаем популярные товары
     popular_products = get_products(limit=8)
-    
+
     return render_template('index.html', 
                          products=products,
                          categories=categories,
@@ -188,16 +191,16 @@ def index():
 def product_detail(product_id):
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     product = get_product_by_id(product_id)
     if not product:
         flash('Товар не найден', 'error')
         return redirect(url_for('index'))
-    
+
     # Похожие товары
     similar_products = get_products(limit=4, category=product['category'])
     similar_products = [p for p in similar_products if p['id'] != product_id]
-    
+
     return render_template('product_detail.html',
                          product=product,
                          similar_products=similar_products,
@@ -210,12 +213,12 @@ def product_detail(product_id):
 def search():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     query = request.args.get('q', '')
     category = request.args.get('category', '')
-    
+
     products = get_products(search=query, category=category if category else None)
-    
+
     return render_template('search_results.html',
                          products=products,
                          query=query,
@@ -230,7 +233,7 @@ def search():
 def cart():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     if 'user_id' in session:
         # Для зарегистрированных пользователей
         cart_items = get_cart_items(session['user_id'])
@@ -240,7 +243,7 @@ def cart():
         cart_ids = session.get('cart', [])
         cart_items = []
         total = 0
-        
+
         for product_id in cart_ids:
             product = get_product_by_id(int(product_id))
             if product:
@@ -251,7 +254,7 @@ def cart():
                     'total_price': discounted_price
                 })
                 total += discounted_price
-    
+
     return render_template('cart.html',
                          cart_items=cart_items,
                          total=total,
@@ -272,13 +275,13 @@ def add_to_cart(product_id):
         # Для гостей
         if 'cart' not in session:
             session['cart'] = []
-        
+
         if str(product_id) not in session['cart']:
             session['cart'].append(str(product_id))
             flash('Товар добавлен в корзину!', 'success')
         else:
             flash('Товар уже в корзине!', 'info')
-    
+
     return redirect(url_for('index'))
 
 # Языки
@@ -293,13 +296,13 @@ def set_language(language):
 def register():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        
+
         if password != confirm_password:
             flash('Пароли не совпадают!', 'error')
         else:
@@ -309,7 +312,7 @@ def register():
                 return redirect(url_for('login'))
             else:
                 flash('Ошибка регистрации. Возможно, пользователь уже существует.', 'error')
-    
+
     return render_template('register.html',
                          _=translations,
                          current_lang=current_lang,
@@ -320,32 +323,32 @@ def register():
 def login():
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
+
         user = get_user_by_email(email)
         if user and verify_password(password, user['password_hash']):
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['email'] = user['email']
             session['is_admin'] = user['is_admin']
-            
+
             # Переносим корзину гостя в базу данных
             if 'cart' in session:
                 for product_id in session['cart']:
                     add_to_cart_db(user['id'], int(product_id))
                 session.pop('cart', None)
-            
+
             flash(f'Добро пожаловать, {user["username"]}!', 'success')
-            
+
             if user['is_admin']:
                 return redirect(url_for('admin_panel'))
             return redirect(url_for('index'))
         else:
             flash('Неверный email или пароль!', 'error')
-    
+
     return render_template('login.html',
                          _=translations,
                          current_lang=current_lang,
@@ -361,27 +364,27 @@ def google_auth():
 def google_callback():
     token = google.authorize_access_token()
     user_info = token.get('userinfo')
-    
+
     if user_info:
         email = user_info['email']
         name = user_info['name']
-        
+
         # Проверяем, есть ли пользователь
         user = get_user_by_email(email)
-        
+
         if not user:
             # Создаем нового пользователя
             user = create_user_in_supabase(email, name, provider='google', provider_id=user_info['sub'])
-        
+
         if user:
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['email'] = user['email']
             session['is_admin'] = user['is_admin']
-            
+
             flash(f'Добро пожаловать, {user["username"]}!', 'success')
             return redirect(url_for('index'))
-    
+
     flash('Ошибка авторизации через Google', 'error')
     return redirect(url_for('login'))
 
@@ -394,31 +397,31 @@ def facebook_auth():
 @app.route('/auth/facebook/callback')
 def facebook_callback():
     token = facebook.authorize_access_token()
-    
+
     if token:
         resp = facebook.get('me?fields=id,name,email')
         user_info = resp.json()
-        
+
         email = user_info.get('email')
         name = user_info.get('name')
-        
+
         if email:
             # Проверяем, есть ли пользователь
             user = get_user_by_email(email)
-            
+
             if not user:
                 # Создаем нового пользователя
                 user = create_user_in_supabase(email, name, provider='facebook', provider_id=user_info['id'])
-            
+
             if user:
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['email'] = user['email']
                 session['is_admin'] = user['is_admin']
-                
+
                 flash(f'Добро пожаловать, {user["username"]}!', 'success')
                 return redirect(url_for('index'))
-    
+
     flash('Ошибка авторизации через Facebook', 'error')
     return redirect(url_for('login'))
 
@@ -435,10 +438,10 @@ def profile():
     if 'user_id' not in session:
         flash('Войдите в систему для доступа к профилю!', 'error')
         return redirect(url_for('login'))
-    
+
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
-    
+
     return render_template('profile.html',
                          _=translations,
                          current_lang=current_lang,
@@ -450,16 +453,16 @@ def admin_panel():
     if not session.get('is_admin'):
         flash('Доступ запрещен!', 'error')
         return redirect(url_for('index'))
-    
+
     products = get_products()
     categories = get_categories()
-    
+
     # Статистика
     try:
         total_products = len(products)
         total_users = len(supabase.table('users').select('id').execute().data)
         total_orders = len(supabase.table('orders').select('id').execute().data) if supabase.table('orders').select('id').execute().data else 0
-        
+
         stats = {
             'total_products': total_products,
             'total_users': total_users,
@@ -471,7 +474,7 @@ def admin_panel():
             'total_users': 0,
             'total_orders': 0
         }
-    
+
     return render_template('admin_panel.html',
                          products=products,
                          categories=categories,
@@ -482,7 +485,7 @@ def admin_panel():
 def admin_add_product():
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
-    
+
     try:
         data = request.json
         result = supabase.table('products').insert({
@@ -496,7 +499,7 @@ def admin_add_product():
             'in_stock': True,
             'created_at': datetime.now().isoformat()
         }).execute()
-        
+
         if result.data:
             return jsonify({'success': True, 'product': result.data[0]})
         else:
@@ -509,7 +512,7 @@ def admin_add_product():
 def admin_edit_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
-    
+
     try:
         data = request.json
         result = supabase.table('products').update({
@@ -521,7 +524,7 @@ def admin_edit_product(product_id):
             'rating': data['rating'],
             'discount': data['discount']
         }).eq('id', product_id).execute()
-        
+
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -531,7 +534,7 @@ def admin_edit_product(product_id):
 def admin_delete_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
-    
+
     try:
         supabase.table('products').update({'in_stock': False}).eq('id', product_id).execute()
         return jsonify({'success': True})
@@ -543,12 +546,12 @@ def admin_delete_product(product_id):
 def admin_import_products():
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
-    
+
     try:
         # Генерируем фейковые товары для демонстрации
         fake_products = []
         categories = ["Электроника", "Одежда", "Дом", "Красота", "Спорт"]
-        
+
         for i in range(10):
             product = {
                 'name': f'Товар {i+1}',
@@ -562,10 +565,10 @@ def admin_import_products():
                 'created_at': datetime.now().isoformat()
             }
             fake_products.append(product)
-        
+
         # Вставляем в базу данных
         result = supabase.table('products').insert(fake_products).execute()
-        
+
         return jsonify({'success': True, 'added': len(result.data)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
