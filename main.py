@@ -519,4 +519,6 @@ def admin_import_products():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Use debug=False for production deployment
+    debug_mode = os.getenv('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
