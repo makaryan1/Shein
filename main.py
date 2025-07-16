@@ -22,8 +22,14 @@ supabase_url = os.environ.get('SUPABASE_URL')
 supabase_key = os.environ.get('SUPABASE_KEY')
 
 if not supabase_url or not supabase_key:
-    raise ValueError("SUPABASE_URL и SUPABASE_KEY должны быть установлены в Secrets")
+    print("ОШИБКА: Переменные окружения SUPABASE_URL и SUPABASE_KEY не найдены!")
+    print("Пожалуйста, добавьте их в Secrets вашего Repl:")
+    print("1. Откройте инструмент Secrets")
+    print("2. Добавьте SUPABASE_URL = https://your-project-ref.supabase.co")
+    print("3. Добавьте SUPABASE_KEY = your-anon-key")
+    exit(1)
 
+print(f"Подключение к Supabase: {supabase_url}")
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # Удаляем OAuth конфигурации - используем только email/password авторизацию
