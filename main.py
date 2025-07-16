@@ -37,6 +37,11 @@ supabase: Client = create_client(supabase_url, supabase_key)
 # Функции для работы с пользователями
 def create_user_in_supabase(email, username, password=None, provider=None, provider_id=None):
     try:
+        # Проверяем, существует ли пользователь
+        existing_user = get_user_by_email(email)
+        if existing_user:
+            return None
+        
         # Создаем админа если это первый пользователь
         is_admin = email == 'admin@temuclone.com'
         
@@ -46,8 +51,7 @@ def create_user_in_supabase(email, username, password=None, provider=None, provi
             'password_hash': hashlib.sha256(password.encode()).hexdigest() if password else None,
             'provider': provider or 'email',
             'provider_id': provider_id,
-            'is_admin': is_admin,
-            'created_at': datetime.now().isoformat()
+            'is_admin': is_admin
         }
 
         result = supabase.table('users').insert(user_data).execute()
@@ -71,13 +75,14 @@ def create_admin_user():
                 'password_hash': hashlib.sha256(admin_password.encode()).hexdigest(),
                 'provider': 'email',
                 'provider_id': None,
-                'is_admin': True,
-                'created_at': datetime.now().isoformat()
+                'is_admin': True
             }
             
             result = supabase.table('users').insert(admin_data).execute()
             if result.data:
                 print(f"Admin user created: {admin_email} / {admin_password}")
+                # Создаем тестовые товары
+                create_sample_products()
     except Exception as e:
         print(f"Error creating admin: {e}")
 
@@ -91,6 +96,102 @@ def get_user_by_email(email):
 
 def verify_password(password, hash_password):
     return hashlib.sha256(password.encode()).hexdigest() == hash_password
+
+def create_sample_products():
+    """Создает тестовые товары"""
+    try:
+        # Проверяем, есть ли уже товары
+        existing_products = supabase.table('products').select('id').limit(1).execute()
+        if existing_products.data:
+            return
+        
+        sample_products = [
+            {
+                'name': 'Смартфон iPhone 15 Pro',
+                'price': 999.99,
+                'image': 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400&h=400&fit=crop',
+                'category': 'Электроника',
+                'description': 'Последний iPhone с потрясающей камерой и производительностью',
+                'rating': 4.8,
+                'discount': 10,
+                'in_stock': True
+            },
+            {
+                'name': 'Беспроводные наушники AirPods Pro',
+                'price': 249.99,
+                'image': 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop',
+                'category': 'Электроника',
+                'description': 'Наушники с активным шумоподавлением',
+                'rating': 4.7,
+                'discount': 15,
+                'in_stock': True
+            },
+            {
+                'name': 'Кроссовки Nike Air Max',
+                'price': 129.99,
+                'image': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop',
+                'category': 'Обувь',
+                'description': 'Удобные спортивные кроссовки для активного образа жизни',
+                'rating': 4.6,
+                'discount': 25,
+                'in_stock': True
+            },
+            {
+                'name': 'Умные часы Apple Watch Series 9',
+                'price': 399.99,
+                'image': 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400&h=400&fit=crop',
+                'category': 'Электроника',
+                'description': 'Спортивные умные часы с множеством функций',
+                'rating': 4.9,
+                'discount': 20,
+                'in_stock': True
+            },
+            {
+                'name': 'Женская сумка Coach',
+                'price': 199.99,
+                'image': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop',
+                'category': 'Аксессуары',
+                'description': 'Элегантная женская сумка из натуральной кожи',
+                'rating': 4.5,
+                'discount': 30,
+                'in_stock': True
+            },
+            {
+                'name': 'Джинсы Levi\'s 501',
+                'price': 79.99,
+                'image': 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&h=400&fit=crop',
+                'category': 'Одежда',
+                'description': 'Классические джинсы оригинального кроя',
+                'rating': 4.4,
+                'discount': 35,
+                'in_stock': True
+            },
+            {
+                'name': 'Игровая клавиатура Logitech G Pro',
+                'price': 149.99,
+                'image': 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=400&h=400&fit=crop',
+                'category': 'Электроника',
+                'description': 'Механическая клавиатура для геймеров',
+                'rating': 4.7,
+                'discount': 10,
+                'in_stock': True
+            },
+            {
+                'name': 'Кофеварка Nespresso',
+                'price': 199.99,
+                'image': 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
+                'category': 'Дом',
+                'description': 'Автоматическая кофеварка для дома',
+                'rating': 4.6,
+                'discount': 15,
+                'in_stock': True
+            }
+        ]
+        
+        supabase.table('products').insert(sample_products).execute()
+        print("Sample products created successfully")
+    except Exception as e:
+        print(f"Error creating sample products: {e}")
 
 # Функции для работы с товарами
 def get_products(limit=None, category=None, search=None):
@@ -195,7 +296,7 @@ def index():
                          products=products,
                          categories=categories,
                          popular_products=popular_products,
-                         cart_count=len(session.get('cart', [])),
+                         cart_count=len(get_cart_items(session['user_id'])) if 'user_id' in session else len(session.get('cart', [])),
                          _=translations,
                          current_lang=current_lang,
                          languages=LANGUAGES)
