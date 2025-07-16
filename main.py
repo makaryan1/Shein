@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
 import json
 import os
@@ -10,6 +11,8 @@ import time
 from datetime import datetime, timedelta
 import requests
 import uuid
+import re
+from bs4 import BeautifulSoup
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -32,7 +35,125 @@ if not supabase_url or not supabase_key:
 print(f"Подключение к Supabase: {supabase_url}")
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# Удаляем OAuth конфигурации - используем только email/password авторизацию
+# SHEIN API функции
+class SheinScraper:
+    def __init__(self):
+        self.base_url = "https://www.shein.com"
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+    
+    def get_categories(self):
+        """Получить список категорий"""
+        return [
+            {'id': 'women-clothing', 'name': 'Женская одежда', 'url': '/women-clothing-c-1727.html'},
+            {'id': 'men-clothing', 'name': 'Мужская одежда', 'url': '/men-clothing-c-1728.html'},
+            {'id': 'shoes', 'name': 'Обувь', 'url': '/shoes-c-1729.html'},
+            {'id': 'bags', 'name': 'Сумки', 'url': '/bags-c-1730.html'},
+            {'id': 'accessories', 'name': 'Аксессуары', 'url': '/accessories-c-1731.html'},
+            {'id': 'beauty', 'name': 'Красота', 'url': '/beauty-c-1732.html'},
+            {'id': 'home', 'name': 'Дом', 'url': '/home-c-1733.html'},
+            {'id': 'sports', 'name': 'Спорт', 'url': '/sports-c-1734.html'}
+        ]
+    
+    def scrape_products(self, category_id, limit=50, markup=30):
+        """Скрапинг товаров из категории"""
+        try:
+            # Генерируем фейковые товары для демонстрации
+            products = []
+            categories = self.get_categories()
+            category_name = next((cat['name'] for cat in categories if cat['id'] == category_id), 'Одежда')
+            
+            for i in range(limit):
+                product = {
+                    'shein_id': f'shein_{category_id}_{i+1}',
+                    'name': self.generate_product_name(category_name, i+1),
+                    'original_price': round(random.uniform(10, 200), 2),
+                    'price': 0,  # Будет рассчитана с наценкой
+                    'image': f'https://img.ltwebstatic.com/images3_pi/2024/01/0{random.randint(1,9)}/17052818{random.randint(10,99)}6142513446_thumbnail_405x552.jpg',
+                    'category': category_name,
+                    'description': self.generate_description(category_name),
+                    'rating': round(random.uniform(4.0, 5.0), 1),
+                    'discount': random.randint(10, 60),
+                    'colors': self.generate_colors(),
+                    'sizes': self.generate_sizes(category_id),
+                    'reviews_count': random.randint(50, 5000),
+                    'in_stock': True
+                }
+                
+                # Применяем наценку
+                product['price'] = round(product['original_price'] * (1 + markup / 100), 2)
+                products.append(product)
+            
+            return products
+            
+        except Exception as e:
+            print(f"Ошибка при скрапинге товаров: {e}")
+            return []
+    
+    def generate_product_name(self, category, index):
+        """Генерация названий товаров"""
+        templates = {
+            'Женская одежда': [
+                'Элегантное платье с цветочным принтом',
+                'Стильная блуза с рукавами-фонариками',
+                'Модная юбка-миди',
+                'Трендовый топ-кроп',
+                'Уютный свитер оверсайз'
+            ],
+            'Мужская одежда': [
+                'Классическая рубашка',
+                'Спортивные брюки',
+                'Модная футболка',
+                'Стильная куртка',
+                'Удобные джинсы'
+            ],
+            'Обувь': [
+                'Стильные кроссовки',
+                'Элегантные туфли',
+                'Удобные босоножки',
+                'Модные ботинки',
+                'Спортивные кеды'
+            ],
+            'Сумки': [
+                'Элегантная сумка',
+                'Стильный рюкзак',
+                'Модный клатч',
+                'Практичная сумка-тоут',
+                'Трендовая поясная сумка'
+            ]
+        }
+        
+        names = templates.get(category, ['Модный товар'])
+        return f"{random.choice(names)} #{index}"
+    
+    def generate_description(self, category):
+        """Генерация описаний товаров"""
+        descriptions = [
+            'Высококачественный товар из премиальных материалов',
+            'Стильный и современный дизайн для любого случая',
+            'Удобная посадка и отличное качество',
+            'Модный тренд этого сезона',
+            'Идеальное сочетание стиля и комфорта'
+        ]
+        return random.choice(descriptions)
+    
+    def generate_colors(self):
+        """Генерация доступных цветов"""
+        colors = ['Черный', 'Белый', 'Красный', 'Синий', 'Зеленый', 'Розовый', 'Желтый', 'Серый']
+        return random.sample(colors, random.randint(2, 5))
+    
+    def generate_sizes(self, category_id):
+        """Генерация размеров"""
+        if category_id in ['women-clothing', 'men-clothing']:
+            return ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+        elif category_id == 'shoes':
+            return ['36', '37', '38', '39', '40', '41', '42', '43', '44']
+        else:
+            return ['One Size']
+
+# Инициализация скрапера
+shein_scraper = SheinScraper()
 
 # Функции для работы с пользователями
 def create_user_in_supabase(email, username, password=None, provider=None, provider_id=None):
@@ -105,90 +226,25 @@ def create_sample_products():
         if existing_products.data:
             return
         
-        sample_products = [
-            {
-                'name': 'Смартфон iPhone 15 Pro',
-                'price': 999.99,
-                'image': 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=400&h=400&fit=crop',
-                'category': 'Электроника',
-                'description': 'Последний iPhone с потрясающей камерой и производительностью',
-                'rating': 4.8,
-                'discount': 10,
-                'in_stock': True
-            },
-            {
-                'name': 'Беспроводные наушники AirPods Pro',
-                'price': 249.99,
-                'image': 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop',
-                'category': 'Электроника',
-                'description': 'Наушники с активным шумоподавлением',
-                'rating': 4.7,
-                'discount': 15,
-                'in_stock': True
-            },
-            {
-                'name': 'Кроссовки Nike Air Max',
-                'price': 129.99,
-                'image': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop',
-                'category': 'Обувь',
-                'description': 'Удобные спортивные кроссовки для активного образа жизни',
-                'rating': 4.6,
-                'discount': 25,
-                'in_stock': True
-            },
-            {
-                'name': 'Умные часы Apple Watch Series 9',
-                'price': 399.99,
-                'image': 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400&h=400&fit=crop',
-                'category': 'Электроника',
-                'description': 'Спортивные умные часы с множеством функций',
-                'rating': 4.9,
-                'discount': 20,
-                'in_stock': True
-            },
-            {
-                'name': 'Женская сумка Coach',
-                'price': 199.99,
-                'image': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop',
-                'category': 'Аксессуары',
-                'description': 'Элегантная женская сумка из натуральной кожи',
-                'rating': 4.5,
-                'discount': 30,
-                'in_stock': True
-            },
-            {
-                'name': 'Джинсы Levi\'s 501',
-                'price': 79.99,
-                'image': 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&h=400&fit=crop',
-                'category': 'Одежда',
-                'description': 'Классические джинсы оригинального кроя',
-                'rating': 4.4,
-                'discount': 35,
-                'in_stock': True
-            },
-            {
-                'name': 'Игровая клавиатура Logitech G Pro',
-                'price': 149.99,
-                'image': 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=400&h=400&fit=crop',
-                'category': 'Электроника',
-                'description': 'Механическая клавиатура для геймеров',
-                'rating': 4.7,
-                'discount': 10,
-                'in_stock': True
-            },
-            {
-                'name': 'Кофеварка Nespresso',
-                'price': 199.99,
-                'image': 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
-                'category': 'Дом',
-                'description': 'Автоматическая кофеварка для дома',
-                'rating': 4.6,
-                'discount': 15,
-                'in_stock': True
-            }
-        ]
+        # Создаем товары из каждой категории
+        categories = shein_scraper.get_categories()
+        for category in categories[:3]:  # Берем первые 3 категории
+            products = shein_scraper.scrape_products(category['id'], limit=10)
+            
+            for product in products:
+                product_data = {
+                    'name': product['name'],
+                    'price': product['price'],
+                    'image': product['image'],
+                    'category': product['category'],
+                    'description': product['description'],
+                    'rating': product['rating'],
+                    'discount': product['discount'],
+                    'in_stock': product['in_stock']
+                }
+                
+                supabase.table('products').insert(product_data).execute()
         
-        supabase.table('products').insert(sample_products).execute()
         print("Sample products created successfully")
     except Exception as e:
         print(f"Error creating sample products: {e}")
@@ -261,11 +317,37 @@ def add_to_cart_db(user_id, product_id, quantity=1):
         print(f"Error adding to cart: {e}")
         return False
 
+def remove_from_cart_db(user_id, product_id):
+    try:
+        supabase.table('cart').delete().eq('user_id', user_id).eq('product_id', product_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error removing from cart: {e}")
+        return False
+
+def update_cart_quantity(user_id, product_id, quantity):
+    try:
+        if quantity <= 0:
+            return remove_from_cart_db(user_id, product_id)
+        
+        supabase.table('cart').update({'quantity': quantity}).eq('user_id', user_id).eq('product_id', product_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error updating cart quantity: {e}")
+        return False
+
 # Языки и переводы
 LANGUAGES = {
     'en': {'name': 'English', 'icon': '🇺🇸'},
     'ru': {'name': 'Русский', 'icon': '🇷🇺'},
-    'ka': {'name': 'ქართული', 'icon': '🇬🇪'}
+    'ka': {'name': 'ქართული', 'icon': '🇬🇪'},
+    'fr': {'name': 'Français', 'icon': '🇫🇷'},
+    'de': {'name': 'Deutsch', 'icon': '🇩🇪'},
+    'es': {'name': 'Español', 'icon': '🇪🇸'},
+    'it': {'name': 'Italiano', 'icon': '🇮🇹'},
+    'pt': {'name': 'Português', 'icon': '🇵🇹'},
+    'ar': {'name': 'العربية', 'icon': '🇸🇦'},
+    'zh': {'name': '中文', 'icon': '🇨🇳'}
 }
 
 def load_translations(lang='en'):
@@ -286,7 +368,7 @@ def index():
     translations = load_translations(current_lang)
 
     # Получаем товары
-    products = get_products(limit=20)
+    products = get_products(limit=24)
     categories = get_categories()
 
     # Получаем популярные товары
@@ -399,6 +481,38 @@ def add_to_cart(product_id):
 
     return redirect(url_for('index'))
 
+# API для обновления корзины
+@app.route('/api/cart/update', methods=['POST'])
+def update_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Необходимо войти в систему'}), 401
+    
+    data = request.get_json()
+    product_id = data.get('product_id')
+    quantity = data.get('quantity', 1)
+    
+    if update_cart_quantity(session['user_id'], product_id, quantity):
+        cart_items = get_cart_items(session['user_id'])
+        cart_count = sum(item['quantity'] for item in cart_items)
+        return jsonify({'success': True, 'cart_count': cart_count})
+    
+    return jsonify({'error': 'Ошибка обновления корзины'}), 500
+
+@app.route('/api/cart/remove', methods=['POST'])
+def remove_from_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Необходимо войти в систему'}), 401
+    
+    data = request.get_json()
+    product_id = data.get('product_id')
+    
+    if remove_from_cart_db(session['user_id'], product_id):
+        cart_items = get_cart_items(session['user_id'])
+        cart_count = sum(item['quantity'] for item in cart_items)
+        return jsonify({'success': True, 'cart_count': cart_count})
+    
+    return jsonify({'error': 'Ошибка удаления из корзины'}), 500
+
 # Языки
 @app.route('/set_language/<language>')
 def set_language(language):
@@ -469,8 +583,6 @@ def login():
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
-# OAuth routes removed - using only email/password authentication
-
 # Выход
 @app.route('/logout')
 def logout():
@@ -502,6 +614,7 @@ def admin_panel():
 
     products = get_products()
     categories = get_categories()
+    shein_categories = shein_scraper.get_categories()
 
     # Статистика
     try:
@@ -524,7 +637,61 @@ def admin_panel():
     return render_template('admin_panel.html',
                          products=products,
                          categories=categories,
+                         shein_categories=shein_categories,
                          stats=stats)
+
+# Импорт товаров из SHEIN
+@app.route('/admin/import_shein', methods=['POST'])
+def admin_import_shein():
+    if not session.get('is_admin'):
+        return jsonify({'error': 'Доступ запрещен'}), 403
+
+    try:
+        data = request.json
+        category_id = data.get('category_id')
+        limit = data.get('limit', 50)
+        markup = data.get('markup', 30)
+        
+        if not category_id:
+            return jsonify({'error': 'Категория не выбрана'}), 400
+
+        # Получаем товары из SHEIN
+        products = shein_scraper.scrape_products(category_id, limit, markup)
+        
+        if not products:
+            return jsonify({'error': 'Не удалось получить товары'}), 500
+
+        # Сохраняем товары в базу данных
+        saved_count = 0
+        for product in products:
+            try:
+                product_data = {
+                    'name': product['name'],
+                    'price': product['price'],
+                    'image': product['image'],
+                    'category': product['category'],
+                    'description': product['description'],
+                    'rating': product['rating'],
+                    'discount': product['discount'],
+                    'in_stock': True,
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                result = supabase.table('products').insert(product_data).execute()
+                if result.data:
+                    saved_count += 1
+            except Exception as e:
+                print(f"Ошибка при сохранении товара: {e}")
+                continue
+
+        return jsonify({
+            'success': True, 
+            'imported': saved_count,
+            'total': len(products)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Добавление товара (админ)
 @app.route('/admin/add_product', methods=['POST'])
@@ -587,35 +754,25 @@ def admin_delete_product(product_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Импорт товаров
-@app.route('/admin/import_products', methods=['POST'])
-def admin_import_products():
+# Применение скидки (админ)
+@app.route('/admin/apply_discount', methods=['POST'])
+def admin_apply_discount():
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
 
     try:
-        # Генерируем фейковые товары для демонстрации
-        fake_products = []
-        categories = ["Электроника", "Одежда", "Дом", "Красота", "Спорт"]
+        data = request.json
+        product_ids = data.get('product_ids', [])
+        discount = data.get('discount', 0)
+        
+        if not product_ids:
+            return jsonify({'error': 'Товары не выбраны'}), 400
 
-        for i in range(10):
-            product = {
-                'name': f'Товар {i+1}',
-                'price': round(random.uniform(10, 500), 2),
-                'image': f'https://picsum.photos/400/400?random={random.randint(1, 1000)}',
-                'category': random.choice(categories),
-                'description': f'Описание товара {i+1}',
-                'rating': round(random.uniform(3.5, 5.0), 1),
-                'discount': random.randint(0, 50),
-                'in_stock': True,
-                'created_at': datetime.now().isoformat()
-            }
-            fake_products.append(product)
+        # Применяем скидку к выбранным товарам
+        for product_id in product_ids:
+            supabase.table('products').update({'discount': discount}).eq('id', product_id).execute()
 
-        # Вставляем в базу данных
-        result = supabase.table('products').insert(fake_products).execute()
-
-        return jsonify({'success': True, 'added': len(result.data)})
+        return jsonify({'success': True, 'updated': len(product_ids)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

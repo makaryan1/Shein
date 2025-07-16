@@ -4,190 +4,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ панель - TemuClone</title>
+    <title>Админ-панель - SHEIN Market</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('admin_panel') }}">
-                <i class="fas fa-cog"></i> Админ панель
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('index') }}">
-                    <i class="fas fa-home"></i> Главная
-                </a>
-                <a class="nav-link" href="{{ url_for('logout') }}">
-                    <i class="fas fa-sign-out-alt"></i> Выйти
-                </a>
+    <div class="admin-section">
+        <div class="container">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="text-gradient">Админ-панель</h1>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>На сайт
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                    </a>
+                </div>
             </div>
-        </div>
-    </nav>
 
-    <!-- Dashboard -->
-    <div class="container-fluid py-4">
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ stats.total_products }}</h4>
-                                <p>Товаров</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-box fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Stats Cards -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.total_products }}</div>
+                    <div class="stat-label">Товаров</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.total_users }}</div>
+                    <div class="stat-label">Пользователей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.total_orders }}</div>
+                    <div class="stat-label">Заказов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ "%.2f"|format(stats.get('revenue', 0)) }}₾</div>
+                    <div class="stat-label">Доход</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ stats.total_users }}</h4>
-                                <p>Пользователей</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-users fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ stats.total_orders }}</h4>
-                                <p>Заказов</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-shopping-cart fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ categories|length }}</h4>
-                                <p>Категорий</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-tags fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Быстрые действия</h5>
+            <!-- SHEIN Import Section -->
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-download me-2"></i>Импорт товаров из SHEIN</h5>
+                    <button class="btn btn-success" onclick="showImportModal()">
+                        <i class="fas fa-plus me-2"></i>Импортировать товары
+                    </button>
+                </div>
+                
+                <div class="row">
+                    {% for category in shein_categories %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card category-card h-100" onclick="importFromCategory('{{ category.id }}')">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tshirt fa-2x mb-3 text-primary"></i>
+                                <h6>{{ category.name }}</h6>
+                                <p class="text-muted small">Импортировать товары</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <button class="btn btn-primary me-2" onclick="showAddProductModal()">
-                            <i class="fas fa-plus"></i> Добавить товар
-                        </button>
-                        <button class="btn btn-success me-2" onclick="importProducts()">
-                            <i class="fas fa-download"></i> Импорт товаров
-                        </button>
-                        <button class="btn btn-warning me-2" onclick="showDiscountModal()">
-                            <i class="fas fa-percent"></i> Применить скидку
-                        </button>
-                        <button class="btn btn-danger me-2" onclick="showSalesModal()">
-                            <i class="fas fa-fire"></i> Акции
-                        </button>
-                        <button class="btn btn-info" onclick="showAnalyticsModal()">
-                            <i class="fas fa-chart-bar"></i> Аналитика
-                        </button>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
-        </div>
 
-        <!-- Products Table -->
-        <div class="card">
-            <div class="card-header">
-                <h5>Управление товарами</h5>
-                <div class="float-end">
-                    <input type="text" id="searchProducts" class="form-control" placeholder="Поиск товаров..." style="width: 300px;">
+            <!-- Quick Actions -->
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-bolt me-2"></i>Быстрые действия</h5>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-primary w-100" onclick="showAddProductModal()">
+                            <i class="fas fa-plus me-2"></i>Добавить товар
+                        </button>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-warning w-100" onclick="showDiscountModal()">
+                            <i class="fas fa-percent me-2"></i>Применить скидку
+                        </button>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-info w-100" onclick="showAnalyticsModal()">
+                            <i class="fas fa-chart-bar me-2"></i>Аналитика
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="card-body">
+
+            <!-- Products Table -->
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-box me-2"></i>Управление товарами</h5>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control" placeholder="Поиск товаров..." id="searchProducts" onkeyup="searchProducts()">
+                        <select class="form-select" id="categoryFilter" onchange="filterProducts()">
+                            <option value="">Все категории</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table table-striped" id="productsTable">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Изображение</th>
+                                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                                <th>Фото</th>
                                 <th>Название</th>
-                                <th>Категория</th>
                                 <th>Цена</th>
+                                <th>Категория</th>
                                 <th>Скидка</th>
                                 <th>Рейтинг</th>
-                                <th>Статус</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="productsTableBody">
                             {% for product in products %}
-                            <tr>
-                                <td>{{ product.id }}</td>
+                            <tr data-category="{{ product.category }}">
+                                <td><input type="checkbox" class="product-checkbox" value="{{ product.id }}"></td>
                                 <td>
-                                    <img src="{{ product.image }}" alt="{{ product.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
-                                </td>
-                                <td>{{ product.name }}</td>
-                                <td>{{ product.category }}</td>
-                                <td>${{ "%.2f"|format(product.price) }}</td>
-                                <td>
-                                    {% if product.discount > 0 %}
-                                        <span class="badge bg-danger">-{{ product.discount }}%</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Нет</span>
-                                    {% endif %}
+                                    <img src="{{ product.image }}" alt="{{ product.name }}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
                                 </td>
                                 <td>
-                                    <div class="stars">
+                                    <strong>{{ product.name }}</strong>
+                                    <br><small class="text-muted">{{ product.description[:50] }}...</small>
+                                </td>
+                                <td>
+                                    <span class="text-success fw-bold">${{ "%.2f"|format(product.price) }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ product.category }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ product.discount }}%</span>
+                                </td>
+                                <td>
+                                    <span class="text-warning">
                                         {% for i in range(5) %}
-                                            <i class="fas fa-star{% if i >= product.rating %} text-muted{% endif %}"></i>
+                                            <i class="fas fa-star{% if i >= product.rating|round|int %} text-muted{% endif %}"></i>
                                         {% endfor %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct('{{ product.id }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('{{ product.id }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
-                                </td>
-                                <td>
-                                    {% if product.in_stock %}
-                                        <span class="badge bg-success">В наличии</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Нет в наличии</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning" onclick="editProduct({{ product.id }})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteProduct({{ product.id }})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-warning" onclick="applyDiscountToSelected()">
+                        <i class="fas fa-percent me-2"></i>Применить скидку к выбранным
+                    </button>
+                    <button class="btn btn-danger ms-2" onclick="deleteSelected()">
+                        <i class="fas fa-trash me-2"></i>Удалить выбранные
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Импорт товаров из SHEIN</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm">
+                        <div class="mb-3">
+                            <label for="categorySelect" class="form-label">Категория</label>
+                            <select class="form-select" id="categorySelect" required>
+                                <option value="">Выберите категорию</option>
+                                {% for category in shein_categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="limitInput" class="form-label">Количество товаров</label>
+                            <input type="number" class="form-control" id="limitInput" value="50" min="1" max="200">
+                        </div>
+                        <div class="mb-3">
+                            <label for="markupInput" class="form-label">Наценка (%)</label>
+                            <input type="number" class="form-control" id="markupInput" value="30" min="0" max="200">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-success" onclick="importProducts()">
+                        <i class="fas fa-download me-2"></i>Импортировать
+                    </button>
                 </div>
             </div>
         </div>
@@ -195,7 +219,7 @@
 
     <!-- Add Product Modal -->
     <div class="modal fade" id="addProductModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Добавить товар</h5>
@@ -203,109 +227,42 @@
                 </div>
                 <div class="modal-body">
                     <form id="addProductForm">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Название</label>
-                                    <input type="text" class="form-control" name="name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Цена</label>
-                                    <input type="number" class="form-control" name="price" step="0.01" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Категория</label>
-                                    <select class="form-control" name="category" required>
-                                        {% for category in categories %}
-                                            <option value="{{ category }}">{{ category }}</option>
-                                        {% endfor %}
-                                        <option value="new">Новая категория...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Рейтинг</label>
-                                    <input type="number" class="form-control" name="rating" min="1" max="5" step="0.1" value="4.5">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">URL изображения</label>
-                                    <input type="url" class="form-control" name="image" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Скидка (%)</label>
-                                    <input type="number" class="form-control" name="discount" min="0" max="90" value="0">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Описание</label>
-                                    <textarea class="form-control" name="description" rows="4"></textarea>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="productName" class="form-label">Название</label>
+                            <input type="text" class="form-control" id="productName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productPrice" class="form-label">Цена</label>
+                            <input type="number" class="form-control" id="productPrice" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productImage" class="form-label">URL изображения</label>
+                            <input type="url" class="form-control" id="productImage" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productCategory" class="form-label">Категория</label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">Выберите категорию</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productDescription" class="form-label">Описание</label>
+                            <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productDiscount" class="form-label">Скидка (%)</label>
+                            <input type="number" class="form-control" id="productDiscount" value="0" min="0" max="100">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" onclick="addProduct()">Добавить</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Product Modal -->
-    <div class="modal fade" id="editProductModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Редактировать товар</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editProductForm">
-                        <input type="hidden" name="product_id">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Название</label>
-                                    <input type="text" class="form-control" name="name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Цена</label>
-                                    <input type="number" class="form-control" name="price" step="0.01" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Категория</label>
-                                    <select class="form-control" name="category" required>
-                                        {% for category in categories %}
-                                            <option value="{{ category }}">{{ category }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Рейтинг</label>
-                                    <input type="number" class="form-control" name="rating" min="1" max="5" step="0.1">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">URL изображения</label>
-                                    <input type="url" class="form-control" name="image" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Скидка (%)</label>
-                                    <input type="number" class="form-control" name="discount" min="0" max="90">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Описание</label>
-                                    <textarea class="form-control" name="description" rows="4"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" onclick="updateProduct()">Сохранить</button>
+                    <button type="button" class="btn btn-success" onclick="addProduct()">
+                        <i class="fas fa-plus me-2"></i>Добавить
+                    </button>
                 </div>
             </div>
         </div>
@@ -322,29 +279,19 @@
                 <div class="modal-body">
                     <form id="discountForm">
                         <div class="mb-3">
-                            <label class="form-label">Размер скидки (%)</label>
-                            <input type="number" class="form-control" name="discount" min="1" max="90" value="20">
+                            <label for="discountValue" class="form-label">Размер скидки (%)</label>
+                            <input type="number" class="form-control" id="discountValue" min="0" max="100" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Применить к</label>
-                            <select class="form-control" name="apply_to">
-                                <option value="all">Всем товарам</option>
-                                <option value="category">Определенной категории</option>
-                            </select>
-                        </div>
-                        <div class="mb-3" id="categorySelect" style="display: none;">
-                            <label class="form-label">Категория</label>
-                            <select class="form-control" name="category">
-                                {% for category in categories %}
-                                    <option value="{{ category }}">{{ category }}</option>
-                                {% endfor %}
-                            </select>
+                            <small class="text-muted">Скидка будет применена к выбранным товарам</small>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-warning" onclick="applyDiscount()">Применить</button>
+                    <button type="button" class="btn btn-warning" onclick="applyDiscount()">
+                        <i class="fas fa-percent me-2"></i>Применить
+                    </button>
                 </div>
             </div>
         </div>
@@ -352,120 +299,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Search functionality
-        document.getElementById('searchProducts').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#productsTable tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
+        // Show import modal
+        function showImportModal() {
+            new bootstrap.Modal(document.getElementById('importModal')).show();
+        }
 
         // Show add product modal
         function showAddProductModal() {
             new bootstrap.Modal(document.getElementById('addProductModal')).show();
-        }
-
-        // Add product
-        function addProduct() {
-            const form = document.getElementById('addProductForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            
-            fetch('/admin/add_product', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Ошибка при добавлении товара');
-                }
-            });
-        }
-
-        // Edit product
-        function editProduct(productId) {
-            // Находим товар в таблице и заполняем форму
-            const row = document.querySelector(`tr:has(td:first-child:contains(${productId}))`);
-            if (row) {
-                const cells = row.querySelectorAll('td');
-                const form = document.getElementById('editProductForm');
-                
-                form.querySelector('input[name="product_id"]').value = productId;
-                form.querySelector('input[name="name"]').value = cells[2].textContent;
-                form.querySelector('select[name="category"]').value = cells[3].textContent;
-                form.querySelector('input[name="price"]').value = cells[4].textContent.replace('$', '');
-                
-                new bootstrap.Modal(document.getElementById('editProductModal')).show();
-            }
-        }
-
-        // Update product
-        function updateProduct() {
-            const form = document.getElementById('editProductForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            const productId = data.product_id;
-            delete data.product_id;
-            
-            fetch(`/admin/edit_product/${productId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Ошибка при обновлении товара');
-                }
-            });
-        }
-
-        // Delete product
-        function deleteProduct(productId) {
-            if (confirm('Вы уверены, что хотите удалить этот товар?')) {
-                fetch(`/admin/delete_product/${productId}`, {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Ошибка при удалении товара');
-                    }
-                });
-            }
-        }
-
-        // Import products
-        function importProducts() {
-            if (confirm('Импортировать тестовые товары?')) {
-                fetch('/admin/import_products', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(`Добавлено ${data.added} товаров`);
-                        location.reload();
-                    } else {
-                        alert('Ошибка при импорте товаров');
-                    }
-                });
-            }
         }
 
         // Show discount modal
@@ -473,61 +314,271 @@
             new bootstrap.Modal(document.getElementById('discountModal')).show();
         }
 
-        // Apply discount
-        function applyDiscount() {
-            const form = document.getElementById('discountForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            
-            // Здесь можно добавить логику применения скидки
-            alert('Скидка применена!');
-            bootstrap.Modal.getInstance(document.getElementById('discountModal')).hide();
+        // Import products from SHEIN
+        function importProducts() {
+            const categoryId = document.getElementById('categorySelect').value;
+            const limit = document.getElementById('limitInput').value;
+            const markup = document.getElementById('markupInput').value;
+
+            if (!categoryId) {
+                alert('Выберите категорию');
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Импортируем...';
+            btn.disabled = true;
+
+            fetch('/admin/import_shein', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    category_id: categoryId,
+                    limit: parseInt(limit),
+                    markup: parseInt(markup)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Успешно импортировано ${data.imported} из ${data.total} товаров`);
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при импорте');
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+            });
         }
 
-        // Show sales modal
-        function showSalesModal() {
-            alert('Функция акций будет добавлена в следующем обновлении');
+        // Import from category (quick action)
+        function importFromCategory(categoryId) {
+            document.getElementById('categorySelect').value = categoryId;
+            showImportModal();
+        }
+
+        // Add new product
+        function addProduct() {
+            const formData = {
+                name: document.getElementById('productName').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                image: document.getElementById('productImage').value,
+                category: document.getElementById('productCategory').value,
+                description: document.getElementById('productDescription').value,
+                discount: parseInt(document.getElementById('productDiscount').value) || 0
+            };
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Добавляем...';
+            btn.disabled = true;
+
+            fetch('/admin/add_product', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Товар успешно добавлен');
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при добавлении товара');
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+            });
+        }
+
+        // Edit product
+        function editProduct(productId) {
+            alert('Функция редактирования товара будет реализована позже');
+        }
+
+        // Delete product
+        function deleteProduct(productId) {
+            if (confirm('Вы уверены, что хотите удалить этот товар?')) {
+                fetch(`/admin/delete_product/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Произошла ошибка при удалении товара');
+                });
+            }
+        }
+
+        // Toggle select all
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // Apply discount to selected products
+        function applyDiscountToSelected() {
+            const selectedProducts = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedProducts.length === 0) {
+                alert('Выберите товары для применения скидки');
+                return;
+            }
+            
+            showDiscountModal();
+        }
+
+        // Apply discount
+        function applyDiscount() {
+            const selectedProducts = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+            const discount = parseInt(document.getElementById('discountValue').value);
+
+            if (selectedProducts.length === 0) {
+                alert('Выберите товары');
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Применяем...';
+            btn.disabled = true;
+
+            fetch('/admin/apply_discount', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_ids: selectedProducts,
+                    discount: discount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Скидка применена к ${data.updated} товарам`);
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при применении скидки');
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                bootstrap.Modal.getInstance(document.getElementById('discountModal')).hide();
+            });
+        }
+
+        // Delete selected products
+        function deleteSelected() {
+            const selectedProducts = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedProducts.length === 0) {
+                alert('Выберите товары для удаления');
+                return;
+            }
+
+            if (confirm(`Вы уверены, что хотите удалить ${selectedProducts.length} товаров?`)) {
+                // Delete each product
+                selectedProducts.forEach(productId => {
+                    fetch(`/admin/delete_product/${productId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                });
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        }
+
+        // Search products
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchProducts').value.toLowerCase();
+            const rows = document.querySelectorAll('#productsTableBody tr');
+            
+            rows.forEach(row => {
+                const productName = row.cells[2].textContent.toLowerCase();
+                if (productName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Filter products by category
+        function filterProducts() {
+            const category = document.getElementById('categoryFilter').value;
+            const rows = document.querySelectorAll('#productsTableBody tr');
+            
+            rows.forEach(row => {
+                if (category === '' || row.dataset.category === category) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         // Show analytics modal
         function showAnalyticsModal() {
-            alert('Функция аналитики будет добавлена в следующем обновлении');
+            alert('Функция аналитики будет реализована позже');
         }
 
-        // Category select toggle
-        document.querySelector('select[name="apply_to"]').addEventListener('change', function() {
-            const categorySelect = document.getElementById('categorySelect');
-            if (this.value === 'category') {
-                categorySelect.style.display = 'block';
-            } else {
-                categorySelect.style.display = 'none';
-            }
+        // Category card hover effect
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
+                this.style.cursor = 'pointer';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '';
+            });
         });
     </script>
-
-    <style>
-        .stars {
-            color: #FFD700;
-        }
-        
-        .card {
-            border: none;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            border-top: none;
-        }
-        
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .modal-lg {
-            max-width: 800px;
-        }
-    </style>
 </body>
 </html>
