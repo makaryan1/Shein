@@ -26,41 +26,21 @@ if not supabase_url or not supabase_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# Инициализация OAuth
-oauth = OAuth(app)
-
-# Настройка Google OAuth
-google = oauth.register(
-    name='google',
-    client_id=os.getenv('GOOGLE_CLIENT_ID'),
-    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
-)
-
-# Настройка Facebook OAuth
-facebook = oauth.register(
-    name='facebook',
-    client_id=os.getenv('FACEBOOK_APP_ID'),
-    client_secret=os.getenv('FACEBOOK_APP_SECRET'),
-    access_token_url='https://graph.facebook.com/oauth/access_token',
-    authorize_url='https://www.facebook.com/dialog/oauth',
-    api_base_url='https://graph.facebook.com/',
-    client_kwargs={'scope': 'email'},
-)
+# Удаляем OAuth конфигурации - используем только email/password авторизацию
 
 # Функции для работы с пользователями
 def create_user_in_supabase(email, username, password=None, provider=None, provider_id=None):
     try:
+        # Создаем админа если это первый пользователь
+        is_admin = email == 'admin@temuclone.com'
+        
         user_data = {
             'email': email,
             'username': username,
             'password_hash': hashlib.sha256(password.encode()).hexdigest() if password else None,
             'provider': provider or 'email',
             'provider_id': provider_id,
-            'is_admin': False,
+            'is_admin': is_admin,
             'created_at': datetime.now().isoformat()
         }
 
@@ -69,6 +49,31 @@ def create_user_in_supabase(email, username, password=None, provider=None, provi
     except Exception as e:
         print(f"Error creating user: {e}")
         return None
+
+def create_admin_user():
+    """Создает админа при первом запуске"""
+    try:
+        admin_email = 'admin@temuclone.com'
+        admin_password = 'AdminTemu2024!@#'
+        
+        # Проверяем, существует ли админ
+        existing_admin = get_user_by_email(admin_email)
+        if not existing_admin:
+            admin_data = {
+                'email': admin_email,
+                'username': 'Administrator',
+                'password_hash': hashlib.sha256(admin_password.encode()).hexdigest(),
+                'provider': 'email',
+                'provider_id': None,
+                'is_admin': True,
+                'created_at': datetime.now().isoformat()
+            }
+            
+            result = supabase.table('users').insert(admin_data).execute()
+            if result.data:
+                print(f"Admin user created: {admin_email} / {admin_password}")
+    except Exception as e:
+        print(f"Error creating admin: {e}")
 
 def get_user_by_email(email):
     try:
@@ -167,6 +172,9 @@ def load_translations(lang='en'):
 # Главная страница
 @app.route('/')
 def index():
+    # Создаем админа при первом запуске
+    create_admin_user()
+    
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
 
@@ -354,76 +362,7 @@ def login():
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
-# Google OAuth
-@app.route('/auth/google')
-def google_auth():
-    redirect_uri = url_for('google_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-@app.route('/auth/google/callback')
-def google_callback():
-    token = google.authorize_access_token()
-    user_info = token.get('userinfo')
-
-    if user_info:
-        email = user_info['email']
-        name = user_info['name']
-
-        # Проверяем, есть ли пользователь
-        user = get_user_by_email(email)
-
-        if not user:
-            # Создаем нового пользователя
-            user = create_user_in_supabase(email, name, provider='google', provider_id=user_info['sub'])
-
-        if user:
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['email'] = user['email']
-            session['is_admin'] = user['is_admin']
-
-            flash(f'Добро пожаловать, {user["username"]}!', 'success')
-            return redirect(url_for('index'))
-
-    flash('Ошибка авторизации через Google', 'error')
-    return redirect(url_for('login'))
-
-# Facebook OAuth
-@app.route('/auth/facebook')
-def facebook_auth():
-    redirect_uri = url_for('facebook_callback', _external=True)
-    return facebook.authorize_redirect(redirect_uri)
-
-@app.route('/auth/facebook/callback')
-def facebook_callback():
-    token = facebook.authorize_access_token()
-
-    if token:
-        resp = facebook.get('me?fields=id,name,email')
-        user_info = resp.json()
-
-        email = user_info.get('email')
-        name = user_info.get('name')
-
-        if email:
-            # Проверяем, есть ли пользователь
-            user = get_user_by_email(email)
-
-            if not user:
-                # Создаем нового пользователя
-                user = create_user_in_supabase(email, name, provider='facebook', provider_id=user_info['id'])
-
-            if user:
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                session['email'] = user['email']
-                session['is_admin'] = user['is_admin']
-
-                flash(f'Добро пожаловать, {user["username"]}!', 'success')
-                return redirect(url_for('index'))
-
-    flash('Ошибка авторизации через Facebook', 'error')
-    return redirect(url_for('login'))
+# OAuth routes removed - using only email/password authentication
 
 # Выход
 @app.route('/logout')
