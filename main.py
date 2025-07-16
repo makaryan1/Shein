@@ -302,7 +302,7 @@ def index():
                          languages=LANGUAGES)
 
 # Страница товара
-@app.route('/product/<int:product_id>')
+@app.route('/product/<string:product_id>')
 def product_detail(product_id):
     current_lang = session.get('language', 'en')
     translations = load_translations(current_lang)
@@ -360,7 +360,7 @@ def cart():
         total = 0
 
         for product_id in cart_ids:
-            product = get_product_by_id(int(product_id))
+            product = get_product_by_id(product_id)
             if product:
                 discounted_price = product['price'] * (1 - product['discount'] / 100)
                 cart_items.append({
@@ -378,7 +378,7 @@ def cart():
                          languages=LANGUAGES)
 
 # Добавление в корзину
-@app.route('/add_to_cart/<int:product_id>')
+@app.route('/add_to_cart/<string:product_id>')
 def add_to_cart(product_id):
     if 'user_id' in session:
         # Для зарегистрированных пользователей
@@ -453,7 +453,7 @@ def login():
             # Переносим корзину гостя в базу данных
             if 'cart' in session:
                 for product_id in session['cart']:
-                    add_to_cart_db(user['id'], int(product_id))
+                    add_to_cart_db(user['id'], product_id)
                 session.pop('cart', None)
 
             flash(f'Добро пожаловать, {user["username"]}!', 'success')
@@ -554,7 +554,7 @@ def admin_add_product():
         return jsonify({'error': str(e)}), 500
 
 # Редактирование товара (админ)
-@app.route('/admin/edit_product/<int:product_id>', methods=['POST'])
+@app.route('/admin/edit_product/<string:product_id>', methods=['POST'])
 def admin_edit_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
@@ -576,7 +576,7 @@ def admin_edit_product(product_id):
         return jsonify({'error': str(e)}), 500
 
 # Удаление товара (админ)
-@app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
+@app.route('/admin/delete_product/<string:product_id>', methods=['POST'])
 def admin_delete_product(product_id):
     if not session.get('is_admin'):
         return jsonify({'error': 'Доступ запрещен'}), 403
