@@ -64,13 +64,54 @@ class SheinScraper:
             categories = self.get_categories()
             category_name = next((cat['name'] for cat in categories if cat['id'] == category_id), 'Одежда')
             
+            # Разнообразные изображения для разных категорий
+            image_sets = {
+                'women-clothing': [
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/02/170528187642513446_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/03/170528188942513447_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/04/170528189642513448_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/05/170528190642513449_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/06/170528191642513450_thumbnail_405x552.jpg'
+                ],
+                'men-clothing': [
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/07/170528192642513451_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/08/170528193642513452_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/09/170528194642513453_thumbnail_405x552.jpg'
+                ],
+                'shoes': [
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/10/170528195642513454_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/11/170528196642513455_thumbnail_405x552.jpg'
+                ],
+                'bags': [
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/12/170528197642513456_thumbnail_405x552.jpg',
+                    'https://img.ltwebstatic.com/images3_pi/2024/01/13/170528198642513457_thumbnail_405x552.jpg'
+                ]
+            }
+            
+            # Используем изображения по умолчанию если категория не найдена
+            default_images = [
+                'https://via.placeholder.com/405x552/FF6F43/FFFFFF?text=SHEIN+Product',
+                'https://via.placeholder.com/405x552/FF69B4/FFFFFF?text=Fashion+Item',
+                'https://via.placeholder.com/405x552/4169E1/FFFFFF?text=Trendy+Style',
+                'https://via.placeholder.com/405x552/32CD32/FFFFFF?text=New+Arrival',
+                'https://via.placeholder.com/405x552/FF4500/FFFFFF?text=Hot+Deal'
+            ]
+            
             for i in range(limit):
+                # Выбираем изображения для категории
+                category_images = image_sets.get(category_id, default_images)
+                main_image = random.choice(category_images)
+                
+                # Генерируем дополнительные изображения для галереи
+                additional_images = random.sample(category_images, min(3, len(category_images)))
+                
                 product = {
                     'shein_id': f'shein_{category_id}_{i+1}',
                     'name': self.generate_product_name(category_name, i+1),
                     'original_price': round(random.uniform(10, 200), 2),
                     'price': 0,  # Будет рассчитана с наценкой
-                    'image': f'https://img.ltwebstatic.com/images3_pi/2024/01/0{random.randint(1,9)}/17052818{random.randint(10,99)}6142513446_thumbnail_405x552.jpg',
+                    'image': main_image,
+                    'images': additional_images,  # Галерея изображений
                     'category': category_name,
                     'description': self.generate_description(category_name),
                     'rating': round(random.uniform(4.0, 5.0), 1),
@@ -78,7 +119,9 @@ class SheinScraper:
                     'colors': self.generate_colors(),
                     'sizes': self.generate_sizes(category_id),
                     'reviews_count': random.randint(50, 5000),
-                    'in_stock': True
+                    'in_stock': True,
+                    'specifications': self.generate_specifications(category_id),
+                    'shipping_info': self.generate_shipping_info()
                 }
                 
                 # Применяем наценку
@@ -90,6 +133,44 @@ class SheinScraper:
         except Exception as e:
             print(f"Ошибка при скрапинге товаров: {e}")
             return []
+    
+    def generate_specifications(self, category_id):
+        """Генерация характеристик товара"""
+        base_specs = {
+            'Бренд': 'SHEIN',
+            'Происхождение': 'Китай',
+            'Качество': 'Премиум'
+        }
+        
+        if category_id in ['women-clothing', 'men-clothing']:
+            base_specs.update({
+                'Материал': random.choice(['Хлопок', 'Полиэстер', 'Вискоза', 'Смесь тканей']),
+                'Уход': 'Машинная стирка при 30°C',
+                'Сезон': random.choice(['Весна-Лето', 'Осень-Зима', 'Всесезонный'])
+            })
+        elif category_id == 'shoes':
+            base_specs.update({
+                'Материал верха': random.choice(['Кожа', 'Текстиль', 'Синтетика']),
+                'Материал подошвы': 'Резина',
+                'Высота каблука': f'{random.randint(0, 10)} см'
+            })
+        elif category_id == 'bags':
+            base_specs.update({
+                'Материал': random.choice(['Кожа PU', 'Текстиль', 'Нейлон']),
+                'Размеры': f'{random.randint(20, 40)}x{random.randint(15, 30)}x{random.randint(5, 15)} см',
+                'Застежка': random.choice(['Молния', 'Магнит', 'Кнопка'])
+            })
+        
+        return base_specs
+    
+    def generate_shipping_info(self):
+        """Генерация информации о доставке"""
+        return {
+            'standard_delivery': '5-7 рабочих дней',
+            'express_delivery': '1-3 рабочих дня',
+            'free_shipping_threshold': 50,
+            'return_policy': '30 дней бесплатного возврата'
+        }
     
     def generate_product_name(self, category, index):
         """Генерация названий товаров"""
@@ -775,6 +856,186 @@ def admin_apply_discount():
         return jsonify({'success': True, 'updated': len(product_ids)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Оформление заказа
+@app.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    if 'user_id' not in session:
+        flash('Войдите в систему для оформления заказа!', 'error')
+        return redirect(url_for('login'))
+
+    current_lang = session.get('language', 'en')
+    translations = load_translations(current_lang)
+
+    if request.method == 'POST':
+        try:
+            # Получаем данные формы
+            order_data = {
+                'first_name': request.form['firstName'],
+                'last_name': request.form['lastName'],
+                'email': request.form['email'],
+                'phone': request.form['phone'],
+                'country': request.form['country'],
+                'city': request.form['city'],
+                'address': request.form['address'],
+                'apartment': request.form.get('apartment', ''),
+                'postal_code': request.form.get('postalCode', ''),
+                'additional_info': request.form.get('additionalInfo', ''),
+                'payment_method': request.form['paymentMethod']
+            }
+
+            # Получаем товары из корзины
+            cart_items = get_cart_items(session['user_id'])
+            if not cart_items:
+                flash('Ваша корзина пуста!', 'error')
+                return redirect(url_for('cart'))
+
+            # Рассчитываем общую сумму
+            total_amount = sum(item['quantity'] * item['products']['price'] * (1 - item['products']['discount'] / 100) for item in cart_items)
+
+            # Создаем заказ
+            order_id = str(uuid.uuid4())
+            order_result = supabase.table('orders').insert({
+                'id': order_id,
+                'user_id': session['user_id'],
+                'status': 'pending',
+                'total_amount': total_amount,
+                'shipping_address': f"{order_data['address']}, {order_data['apartment']}, {order_data['city']}, {order_data['country']}",
+                'customer_info': json.dumps(order_data),
+                'created_at': datetime.now().isoformat()
+            }).execute()
+
+            # Добавляем товары в заказ
+            for item in cart_items:
+                supabase.table('order_items').insert({
+                    'order_id': order_id,
+                    'product_id': item['product_id'],
+                    'quantity': item['quantity'],
+                    'price': item['products']['price'] * (1 - item['products']['discount'] / 100)
+                }).execute()
+
+            # Очищаем корзину
+            supabase.table('cart').delete().eq('user_id', session['user_id']).execute()
+
+            # Отправляем уведомление админу
+            send_order_notification(order_id, order_data, cart_items, total_amount)
+
+            flash('Заказ успешно оформлен! Вы получите уведомление о статусе доставки.', 'success')
+            return redirect(url_for('order_success', order_id=order_id))
+
+        except Exception as e:
+            print(f"Error creating order: {e}")
+            flash('Ошибка при оформлении заказа. Попробуйте снова.', 'error')
+
+    # GET запрос - показываем форму оформления заказа
+    cart_items = get_cart_items(session['user_id'])
+    if not cart_items:
+        flash('Ваша корзина пуста!', 'error')
+        return redirect(url_for('cart'))
+
+    total = sum(item['quantity'] * item['products']['price'] * (1 - item['products']['discount'] / 100) for item in cart_items)
+
+    return render_template('checkout.html',
+                         cart_items=cart_items,
+                         total=total,
+                         _=translations,
+                         current_lang=current_lang,
+                         languages=LANGUAGES)
+
+# Страница успешного заказа
+@app.route('/order_success/<order_id>')
+def order_success(order_id):
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+
+    current_lang = session.get('language', 'en')
+    translations = load_translations(current_lang)
+
+    # Получаем информацию о заказе
+    try:
+        order_result = supabase.table('orders').select('*').eq('id', order_id).eq('user_id', session['user_id']).execute()
+        if not order_result.data:
+            flash('Заказ не найден!', 'error')
+            return redirect(url_for('index'))
+
+        order = order_result.data[0]
+        
+        # Получаем товары заказа
+        order_items_result = supabase.table('order_items').select('*, products(*)').eq('order_id', order_id).execute()
+        order_items = order_items_result.data
+
+        return render_template('order_success.html',
+                             order=order,
+                             order_items=order_items,
+                             _=translations,
+                             current_lang=current_lang,
+                             languages=LANGUAGES)
+    
+    except Exception as e:
+        print(f"Error getting order: {e}")
+        flash('Ошибка при получении информации о заказе', 'error')
+        return redirect(url_for('index'))
+
+def send_order_notification(order_id, order_data, cart_items, total_amount):
+    """Отправляет уведомление админу о новом заказе"""
+    try:
+        # Формируем сообщение для админа
+        message = f"""
+🛒 НОВЫЙ ЗАКАЗ #{order_id[:8]}
+
+👤 ИНФОРМАЦИЯ О ПОКУПАТЕЛЕ:
+Имя: {order_data['first_name']} {order_data['last_name']}
+Email: {order_data['email']}
+Телефон: {order_data['phone']}
+
+📍 АДРЕС ДОСТАВКИ:
+Страна: {order_data['country']}
+Город: {order_data['city']}
+Адрес: {order_data['address']}
+Квартира: {order_data.get('apartment', 'Не указана')}
+Индекс: {order_data.get('postal_code', 'Не указан')}
+Дополнительная информация: {order_data.get('additional_info', 'Нет')}
+
+🛍️ ТОВАРЫ:
+"""
+        
+        for item in cart_items:
+            price = item['products']['price'] * (1 - item['products']['discount'] / 100)
+            message += f"• {item['products']['name']} x{item['quantity']} - ${price:.2f}\n"
+            if item['products']['discount'] > 0:
+                message += f"  (скидка {item['products']['discount']}%)\n"
+
+        message += f"""
+💰 ОБЩАЯ СУММА: ${total_amount:.2f}
+💳 СПОСОБ ОПЛАТЫ: {order_data['payment_method']}
+
+🕐 Время заказа: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+Для обработки заказа свяжитесь с покупателем и организуйте доставку.
+        """
+
+        # В реальном приложении здесь можно отправить:
+        # - Email админу
+        # - SMS уведомление
+        # - Push уведомление
+        # - Webhook в систему управления заказами
+        
+        print("=== УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ ===")
+        print(message)
+        print("=== КОНЕЦ УВЕДОМЛЕНИЯ ===")
+        
+        # Сохраняем уведомление в базу данных
+        supabase.table('notifications').insert({
+            'type': 'new_order',
+            'title': f'Новый заказ #{order_id[:8]}',
+            'message': message,
+            'order_id': order_id,
+            'is_read': False,
+            'created_at': datetime.now().isoformat()
+        }).execute()
+
+    except Exception as e:
+        print(f"Error sending order notification: {e}")
 
 if __name__ == '__main__':
     # Use debug=False for production deployment

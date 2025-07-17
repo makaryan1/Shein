@@ -1,0 +1,735 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оформление заказа - SHEIN Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="temu-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <span class="brand-text">SHEIN Market</span>
+                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Checkout Process -->
+    <div class="checkout-section">
+        <div class="container">
+            <!-- Progress Steps -->
+            <div class="checkout-progress">
+                <div class="progress-step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Корзина</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Доставка</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Оплата</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Подтверждение</div>
+                </div>
+            </div>
+
+            <form method="POST" id="checkoutForm">
+                <div class="row">
+                    <!-- Left Column - Forms -->
+                    <div class="col-lg-8">
+                        <!-- Personal Information -->
+                        <div class="checkout-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-user me-2"></i>Информация о получателе</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Имя *</label>
+                                        <input type="text" class="form-control" name="firstName" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Фамилия *</label>
+                                        <input type="text" class="form-control" name="lastName" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email *</label>
+                                        <input type="email" class="form-control" name="email" value="{{ session.email }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Телефон *</label>
+                                        <input type="tel" class="form-control" name="phone" placeholder="+995 555 123 456" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shipping Address -->
+                        <div class="checkout-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-map-marker-alt me-2"></i>Адрес доставки</h5>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="fillSampleAddress()">
+                                    <i class="fas fa-magic me-1"></i>Заполнить пример
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Страна *</label>
+                                        <select class="form-select" name="country" required onchange="loadCities()">
+                                            <option value="">Выберите страну</option>
+                                            <option value="Грузия">🇬🇪 Грузия</option>
+                                            <option value="Армения">🇦🇲 Армения</option>
+                                            <option value="Азербайджан">🇦🇿 Азербайджан</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Город *</label>
+                                        <select class="form-select" name="city" required>
+                                            <option value="">Сначала выберите страну</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Улица и номер дома *</label>
+                                    <input type="text" class="form-control" name="address" placeholder="ул. Руставели, 15" required>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Квартира/Офис</label>
+                                        <input type="text" class="form-control" name="apartment" placeholder="кв. 25">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Этаж</label>
+                                        <input type="text" class="form-control" name="floor" placeholder="3">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Почтовый индекс</label>
+                                        <input type="text" class="form-control" name="postalCode" placeholder="0108">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Дополнительная информация для курьера</label>
+                                    <textarea class="form-control" name="additionalInfo" rows="3" placeholder="Особые инструкции для доставки (домофон, ориентиры и т.д.)"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Options -->
+                        <div class="checkout-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-truck me-2"></i>Способ доставки</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="delivery-options">
+                                    <div class="delivery-option">
+                                        <input type="radio" name="deliveryMethod" value="standard" id="standardDelivery" checked>
+                                        <label for="standardDelivery" class="delivery-label">
+                                            <div class="delivery-info">
+                                                <div class="delivery-title">
+                                                    <i class="fas fa-truck"></i>
+                                                    Стандартная доставка
+                                                </div>
+                                                <div class="delivery-description">5-7 рабочих дней</div>
+                                            </div>
+                                            <div class="delivery-price">Бесплатно</div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="delivery-option">
+                                        <input type="radio" name="deliveryMethod" value="express" id="expressDelivery">
+                                        <label for="expressDelivery" class="delivery-label">
+                                            <div class="delivery-info">
+                                                <div class="delivery-title">
+                                                    <i class="fas fa-bolt"></i>
+                                                    Экспресс доставка
+                                                </div>
+                                                <div class="delivery-description">1-3 рабочих дня</div>
+                                            </div>
+                                            <div class="delivery-price">₾15.00</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="checkout-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-credit-card me-2"></i>Способ оплаты</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="payment-methods">
+                                    <div class="payment-option">
+                                        <input type="radio" name="paymentMethod" value="card" id="cardPayment" checked>
+                                        <label for="cardPayment" class="payment-label">
+                                            <div class="payment-info">
+                                                <i class="fas fa-credit-card"></i>
+                                                <span>Банковская карта</span>
+                                            </div>
+                                            <div class="card-icons">
+                                                <i class="fab fa-cc-visa"></i>
+                                                <i class="fab fa-cc-mastercard"></i>
+                                                <i class="fab fa-cc-amex"></i>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="payment-option">
+                                        <input type="radio" name="paymentMethod" value="cash" id="cashPayment">
+                                        <label for="cashPayment" class="payment-label">
+                                            <div class="payment-info">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                                <span>Наличными при получении</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="payment-option">
+                                        <input type="radio" name="paymentMethod" value="bank_transfer" id="bankTransfer">
+                                        <label for="bankTransfer" class="payment-label">
+                                            <div class="payment-info">
+                                                <i class="fas fa-university"></i>
+                                                <span>Банковский перевод</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Order Summary -->
+                    <div class="col-lg-4">
+                        <div class="order-summary sticky-top">
+                            <div class="summary-header">
+                                <h5><i class="fas fa-receipt me-2"></i>Ваш заказ</h5>
+                            </div>
+                            
+                            <div class="summary-items">
+                                {% for item in cart_items %}
+                                <div class="summary-item">
+                                    <div class="item-image">
+                                        <img src="{{ item.products.image }}" alt="{{ item.products.name }}">
+                                        <span class="item-quantity">{{ item.quantity }}</span>
+                                    </div>
+                                    <div class="item-details">
+                                        <h6>{{ item.products.name }}</h6>
+                                        <div class="item-price">
+                                            {% if item.products.discount > 0 %}
+                                                <span class="old-price">${{ "%.2f"|format(item.products.price) }}</span>
+                                                <span class="current-price">${{ "%.2f"|format(item.products.price * (1 - item.products.discount / 100)) }}</span>
+                                            {% else %}
+                                                <span class="current-price">${{ "%.2f"|format(item.products.price) }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="summary-totals">
+                                <div class="total-line">
+                                    <span>Товары ({{ cart_items|length }} шт.)</span>
+                                    <span>${{ "%.2f"|format(total) }}</span>
+                                </div>
+                                <div class="total-line">
+                                    <span>Доставка</span>
+                                    <span class="delivery-cost">Бесплатно</span>
+                                </div>
+                                <div class="total-line discount-line" style="display: none;">
+                                    <span>Скидка</span>
+                                    <span class="text-success">-$0.00</span>
+                                </div>
+                                <hr>
+                                <div class="total-line final-total">
+                                    <strong>Итого: <span class="final-amount">${{ "%.2f"|format(total) }}</span></strong>
+                                </div>
+                            </div>
+
+                            <div class="summary-actions">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" id="placeOrderBtn">
+                                    <i class="fas fa-check me-2"></i>
+                                    Оформить заказ
+                                </button>
+                                <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary w-100 mt-2">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Вернуться в корзину
+                                </a>
+                            </div>
+
+                            <div class="security-badges">
+                                <div class="badge-item">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Безопасная оплата</span>
+                                </div>
+                                <div class="badge-item">
+                                    <i class="fas fa-undo"></i>
+                                    <span>Возврат 30 дней</span>
+                                </div>
+                                <div class="badge-item">
+                                    <i class="fas fa-headset"></i>
+                                    <span>Поддержка 24/7</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load cities based on country
+        function loadCities() {
+            const country = document.querySelector('select[name="country"]').value;
+            const citySelect = document.querySelector('select[name="city"]');
+            
+            citySelect.innerHTML = '<option value="">Выберите город</option>';
+            
+            const cities = {
+                'Грузия': ['Тбилиси', 'Батуми', 'Кутаиси', 'Рустави', 'Гори', 'Зугдиди', 'Поти', 'Кобулети'],
+                'Армения': ['Ереван', 'Гюмри', 'Ванадзор', 'Вагаршапат', 'Абовян', 'Капан', 'Гавар'],
+                'Азербайджан': ['Баку', 'Гянджа', 'Сумгаит', 'Мингечевир', 'Ленкорань', 'Шеки', 'Нахчыван']
+            };
+            
+            if (cities[country]) {
+                cities[country].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            }
+        }
+
+        // Fill sample address
+        function fillSampleAddress() {
+            document.querySelector('input[name="firstName"]').value = 'Иван';
+            document.querySelector('input[name="lastName"]').value = 'Иванов';
+            document.querySelector('input[name="phone"]').value = '+995 555 123 456';
+            document.querySelector('select[name="country"]').value = 'Грузия';
+            loadCities();
+            setTimeout(() => {
+                document.querySelector('select[name="city"]').value = 'Тбилиси';
+            }, 100);
+            document.querySelector('input[name="address"]').value = 'ул. Руставели, 15';
+            document.querySelector('input[name="apartment"]').value = 'кв. 25';
+            document.querySelector('input[name="floor"]').value = '3';
+            document.querySelector('input[name="postalCode"]').value = '0108';
+            document.querySelector('textarea[name="additionalInfo"]').value = 'Домофон 25, звонить заранее';
+        }
+
+        // Update delivery cost
+        document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const deliveryCost = document.querySelector('.delivery-cost');
+                const finalAmount = document.querySelector('.final-amount');
+                const baseTotal = {{ total }};
+                
+                if (this.value === 'express') {
+                    deliveryCost.textContent = '₾15.00';
+                    finalAmount.textContent = '$' + (baseTotal + 15).toFixed(2);
+                } else {
+                    deliveryCost.textContent = 'Бесплатно';
+                    finalAmount.textContent = '$' + baseTotal.toFixed(2);
+                }
+            });
+        });
+
+        // Form submission
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('placeOrderBtn');
+            submitBtn.innerHTML = '<div class="loading"></div> Обрабатываем заказ...';
+            submitBtn.disabled = true;
+        });
+
+        // Form validation
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Пожалуйста, заполните все обязательные поля');
+                const submitBtn = document.getElementById('placeOrderBtn');
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Оформить заказ';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+
+    <style>
+        .checkout-section {
+            padding: 40px 0;
+            background: var(--background-gray);
+            min-height: 80vh;
+        }
+
+        .checkout-progress {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--border-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .step-number {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .progress-step.active .step-label {
+            color: var(--dark-text);
+        }
+
+        .progress-line {
+            width: 80px;
+            height: 2px;
+            background: var(--border-light);
+            margin: 0 20px;
+        }
+
+        .checkout-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .delivery-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .delivery-option {
+            position: relative;
+        }
+
+        .delivery-option input[type="radio"] {
+            display: none;
+        }
+
+        .delivery-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid var(--border-light);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delivery-option input[type="radio"]:checked + .delivery-label {
+            border-color: var(--primary-orange);
+            background: rgba(255, 111, 67, 0.05);
+        }
+
+        .delivery-title {
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 5px;
+        }
+
+        .delivery-title i {
+            margin-right: 8px;
+            color: var(--primary-orange);
+        }
+
+        .delivery-description {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .delivery-price {
+            font-weight: 700;
+            color: var(--primary-orange);
+        }
+
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .payment-option {
+            position: relative;
+        }
+
+        .payment-option input[type="radio"] {
+            display: none;
+        }
+
+        .payment-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid var(--border-light);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-option input[type="radio"]:checked + .payment-label {
+            border-color: var(--primary-orange);
+            background: rgba(255, 111, 67, 0.05);
+        }
+
+        .payment-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .payment-info i {
+            font-size: 1.2rem;
+            color: var(--primary-orange);
+        }
+
+        .card-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-icons i {
+            font-size: 1.5rem;
+            color: var(--text-light);
+        }
+
+        .order-summary {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            top: 20px;
+        }
+
+        .summary-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .summary-items {
+            padding: 20px 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .summary-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .item-image {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .item-image img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+        }
+
+        .item-quantity {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--primary-orange);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .item-details h6 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: var(--text-light);
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .current-price {
+            color: var(--danger-color);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .summary-totals {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .final-total {
+            font-size: 1.1rem;
+        }
+
+        .summary-actions {
+            padding: 20px 30px;
+        }
+
+        .security-badges {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .badge-item i {
+            color: var(--success-color);
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            .checkout-progress {
+                overflow-x: auto;
+                padding: 15px;
+            }
+            
+            .progress-line {
+                width: 40px;
+                margin: 0 10px;
+            }
+            
+            .step-label {
+                display: none;
+            }
+            
+            .delivery-label,
+            .payment-label {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+        }
+    </style>
+</body>
+</html>

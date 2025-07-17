@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ оформлен - SHEIN Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="temu-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <span class="brand-text">SHEIN Market</span>
+                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Success Section -->
+    <div class="success-section">
+        <div class="container">
+            <div class="success-card">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                
+                <h1 class="success-title">Заказ успешно оформлен!</h1>
+                <p class="success-subtitle">Спасибо за покупку! Мы получили ваш заказ и начали его обработку.</p>
+                
+                <div class="order-info">
+                    <div class="order-number">
+                        <strong>Номер заказа: #{{ order.id[:8] }}</strong>
+                    </div>
+                    <div class="order-date">
+                        Дата заказа: {{ order.created_at[:10] }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8 mx-auto">
+                        <!-- Order Items -->
+                        <div class="order-items-card">
+                            <h5><i class="fas fa-box me-2"></i>Ваши товары</h5>
+                            <div class="items-list">
+                                {% for item in order_items %}
+                                <div class="order-item">
+                                    <img src="{{ item.products.image }}" alt="{{ item.products.name }}">
+                                    <div class="item-details">
+                                        <h6>{{ item.products.name }}</h6>
+                                        <p class="text-muted">Количество: {{ item.quantity }}</p>
+                                    </div>
+                                    <div class="item-price">
+                                        ${{ "%.2f"|format(item.price) }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="order-total">
+                                <strong>Общая сумма: ${{ "%.2f"|format(order.total_amount) }}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Next Steps -->
+                        <div class="next-steps-card">
+                            <h5><i class="fas fa-clock me-2"></i>Что дальше?</h5>
+                            <div class="steps-timeline">
+                                <div class="step active">
+                                    <div class="step-icon">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h6>Заказ принят</h6>
+                                        <p>Мы получили ваш заказ и начали его обработку</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h6>Подготовка к отправке</h6>
+                                        <p>Товары будут упакованы и переданы курьеру</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h6>В пути</h6>
+                                        <p>Курьер доставит заказ по указанному адресу</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-home"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h6>Доставлено</h6>
+                                        <p>Заказ успешно доставлен получателю</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-shopping-bag me-2"></i>
+                                Продолжить покупки
+                            </a>
+                            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-eye me-2"></i>
+                                Отследить заказ
+                            </a>
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div class="contact-info">
+                            <h6>Нужна помощь?</h6>
+                            <p>Свяжитесь с нашей службой поддержки:</p>
+                            <div class="contact-methods">
+                                <div class="contact-method">
+                                    <i class="fas fa-phone"></i>
+                                    <span>+995 555 123 456</span>
+                                </div>
+                                <div class="contact-method">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>support@sheinmarket.com</span>
+                                </div>
+                                <div class="contact-method">
+                                    <i class="fab fa-telegram"></i>
+                                    <span>@SHEINMarketSupport</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        .success-section {
+            padding: 60px 0;
+            background: var(--background-gray);
+            min-height: 80vh;
+        }
+
+        .success-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 50px 30px;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 5rem;
+            color: var(--success-color);
+            margin-bottom: 30px;
+        }
+
+        .success-title {
+            color: var(--dark-text);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .success-subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .order-info {
+            background: var(--background-gray);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .order-number {
+            font-size: 1.2rem;
+            color: var(--primary-orange);
+            margin-bottom: 5px;
+        }
+
+        .order-date {
+            color: var(--text-light);
+        }
+
+        .order-items-card,
+        .next-steps-card {
+            background: var(--background-gray);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .order-items-card h5,
+        .next-steps-card h5 {
+            color: var(--dark-text);
+            margin-bottom: 20px;
+        }
+
+        .items-list {
+            margin-bottom: 20px;
+        }
+
+        .order-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-details h6 {
+            margin-bottom: 5px;
+            color: var(--dark-text);
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: var(--primary-orange);
+        }
+
+        .order-total {
+            padding-top: 15px;
+            border-top: 2px solid var(--border-light);
+            font-size: 1.2rem;
+            color: var(--dark-text);
+        }
+
+        .steps-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--border-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step.active .step-icon {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step-content h6 {
+            margin-bottom: 5px;
+            color: var(--dark-text);
+        }
+
+        .step-content p {
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .contact-info {
+            text-align: center;
+            padding: 20px;
+            background: var(--background-gray);
+            border-radius: var(--border-radius);
+        }
+
+        .contact-info h6 {
+            color: var(--dark-text);
+            margin-bottom: 10px;
+        }
+
+        .contact-info p {
+            color: var(--text-light);
+            margin-bottom: 15px;
+        }
+
+        .contact-methods {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .contact-method {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-light);
+        }
+
+        .contact-method i {
+            color: var(--primary-orange);
+        }
+
+        @media (max-width: 768px) {
+            .success-card {
+                padding: 30px 20px;
+            }
+            
+            .success-icon {
+                font-size: 3rem;
+            }
+            
+            .success-title {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .contact-methods {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .steps-timeline {
+                gap: 15px;
+            }
+        }
+    </style>
+</body>
+</html>

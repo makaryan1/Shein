@@ -1,0 +1,17 @@
+<div class="cart-actions">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-shopping-bag me-2"></i>
+                                Продолжить покупки
+                            </a>
+                            {% if session.user_id %}
+                                <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-credit-card me-2"></i>
+                                    Оформить заказ
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    Войти для оформления
+                                </a>
+                            {% endif %}
+                        </div>
