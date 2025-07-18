@@ -1,437 +1,367 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="{{ current_lang }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Корзина - TemuClone</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        :root {
-            --primary-orange: #ff6f43;
-            --secondary-pink: #ff2d92;
-            --primary-purple: #8b5cf6;
-            --success-green: #22c55e;
-            --danger-coral: #ef4444;
-            --gradient-primary: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
-        }
+{% block title %}Корзина - AliExpress{% endblock %}
 
-        .cart-container {
-            padding: 2rem 0;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        }
-
-        .cart-header {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .cart-item {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-        }
-
-        .cart-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-
-        .item-image {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-
-        .quantity-controls {
-            display: flex;
-            align-items: center;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-            width: fit-content;
-        }
-
-        .quantity-btn {
-            background: #f3f4f6;
-            border: none;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .quantity-btn:hover {
-            background: var(--primary-orange);
-            color: white;
-        }
-
-        .quantity-input {
-            border: none;
-            width: 60px;
-            height: 40px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .cart-summary {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 2rem;
-        }
-
-        .btn-checkout {
-            background: var(--gradient-primary);
-            border: none;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            width: 100%;
-            transition: all 0.3s;
-        }
-
-        .btn-checkout:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 111, 67, 0.3);
-        }
-
-        .empty-cart {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .empty-cart-icon {
-            font-size: 5rem;
-            color: #d1d5db;
-            margin-bottom: 1rem;
-        }
-
-        .remove-btn {
-            background: none;
-            border: none;
-            color: var(--danger-coral);
-            font-size: 1.2rem;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-
-        .remove-btn:hover {
-            background: var(--danger-coral);
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .cart-container {
-                padding: 1rem 0;
-            }
-            
-            .cart-header, .cart-item, .cart-summary {
-                padding: 1.5rem;
-                margin-bottom: 1rem;
-            }
-            
-            .item-image {
-                width: 80px;
-                height: 80px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header class="navbar navbar-expand-lg navbar-dark" style="background: var(--gradient-primary);">
-        <div class="container">
-            <a class="navbar-brand fw-bold fs-3" href="{{ url_for('index') }}">
-                <i class="fas fa-shopping-bag me-2"></i>TemuClone
-            </a>
-            
-            <div class="d-flex align-items-center">
-                <!-- Language Selector -->
-                <div class="dropdown me-3">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        {{ languages[current_lang].icon }} {{ languages[current_lang].name }}
-                    </button>
-                    <ul class="dropdown-menu">
-                        {% for code, lang in languages.items() %}
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('set_language', language=code) }}">
-                                {{ lang.icon }} {{ lang.name }}
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                {% if session.user_id %}
-                    <div class="user-menu me-3">
-                        <span class="text-white">
-                            <i class="fas fa-user-circle"></i> {{ session.username }}
-                        </span>
-                    </div>
-                {% endif %}
-                
-                <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        {{ cart_items|length }}
-                    </span>
-                </a>
-            </div>
+{% block content %}
+<div class="container my-4">
+    <!-- Cart Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1" style="color: var(--aliexpress-orange);">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Корзина покупок
+            </h2>
+            <p class="text-muted mb-0">Проверьте товары перед оформлением заказа</p>
         </div>
-    </header>
-
-    <div class="cart-container">
-        <div class="container">
-            <div class="cart-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h1 class="mb-0">
-                        <i class="fas fa-shopping-cart me-3"></i>
-                        Ваша корзина
-                    </h1>
-                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        Продолжить покупки
-                    </a>
-                </div>
-            </div>
-
-            {% if cart_items %}
-                <div class="row">
-                    <div class="col-lg-8">
-                        {% for item in cart_items %}
-                        <div class="cart-item" data-product-id="{{ item.product_id if item.product_id else item.products.id }}">
-                            <div class="row align-items-center">
-                                <div class="col-md-2">
-                                    <img src="{{ item.products.image }}" alt="{{ item.products.name }}" class="item-image" onerror="this.src='https://via.placeholder.com/120x120/7B68EE/FFFFFF?text=SHEIN'">
-                                </div>
-                                <div class="col-md-4">
-                                    <h5 class="mb-1">{{ item.products.name }}</h5>
-                                    <p class="text-muted mb-0">{{ item.products.category }}</p>
-                                    {% if item.products.discount > 0 %}
-                                        <span class="badge bg-danger">-{{ item.products.discount }}%</span>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-center">
-                                        <div class="fw-bold text-primary">
-                                            ${{ "%.2f"|format(item.products.price * (1 - item.products.discount / 100)) }}
-                                        </div>
-                                        {% if item.products.discount > 0 %}
-                                            <small class="text-muted text-decoration-line-through">
-                                                ${{ "%.2f"|format(item.products.price) }}
-                                            </small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="quantity-controls">
-                                        <button class="quantity-btn" onclick="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', {{ item.quantity - 1 }})">-</button>
-                                        <input type="number" class="quantity-input" value="{{ item.quantity }}" min="1" 
-                                               onchange="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', this.value)">
-                                        <button class="quantity-btn" onclick="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', {{ item.quantity + 1 }})">+</button>
-                                    </div>
-                                </div>
-                                <div class="col-md-1">
-                                    <button class="remove-btn" onclick="removeFromCart('{{ item.product_id if item.product_id else item.products.id }}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="col-lg-4">
-                        <div class="cart-summary">
-                            <h4 class="mb-4">Итого</h4>
-                            
-                            <div class="d-flex justify-content-between mb-3">
-                                <span>Товары ({{ cart_items|length }}):</span>
-                                <span>${{ "%.2f"|format(total) }}</span>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between mb-3">
-                                <span>Доставка:</span>
-                                <span class="text-success">Бесплатно</span>
-                            </div>
-                            
-                            <hr>
-                            
-                            <div class="d-flex justify-content-between mb-4">
-                                <strong>Общая сумма:</strong>
-                                <strong class="text-primary fs-4">${{ "%.2f"|format(total) }}</strong>
-                            </div>
-
-                            {% if session.user_id %}
-                                <a href="{{ url_for('checkout') }}" class="btn btn-checkout text-decoration-none">
-                                    <i class="fas fa-credit-card me-2"></i>
-                                    Оформить заказ
-                                </a>
-                            {% else %}
-                                <a href="{{ url_for('login') }}" class="btn btn-checkout text-decoration-none">
-                                    <i class="fas fa-sign-in-alt me-2"></i>
-                                    Войти для оформления
-                                </a>
-                            {% endif %}
-
-                            <div class="mt-4">
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-shield-alt text-success me-2"></i>
-                                    <small>Безопасная оплата</small>
-                                </div>
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-truck text-info me-2"></i>
-                                    <small>Быстрая доставка</small>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-undo text-warning me-2"></i>
-                                    <small>30 дней на возврат</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <div class="empty-cart">
-                    <div class="empty-cart-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <h3 class="mb-3">Ваша корзина пуста</h3>
-                    <p class="text-muted mb-4">Добавьте товары в корзину, чтобы продолжить покупки</p>
-                    <a href="{{ url_for('index') }}" class="btn btn-primary">
-                        <i class="fas fa-shopping-bag me-2"></i>
-                        Начать покупки
-                    </a>
-                </div>
-            {% endif %}
-        </div>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Продолжить покупки
+        </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function updateQuantity(productId, quantity) {
-            if (quantity < 1) {
-                removeFromCart(productId);
-                return;
-            }
+    {% if cart_items %}
+        <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+                <div class="bg-white rounded shadow-sm p-3 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                            <label class="form-check-label fw-bold" for="selectAll">
+                                Выбрать все ({{ cart_items|length }} товаров)
+                            </label>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-danger" onclick="clearSelected()">
+                                <i class="fas fa-trash me-1"></i>
+                                Удалить выбранные
+                            </button>
+                        </div>
+                    </div>
 
-            fetch('/api/cart/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    quantity: parseInt(quantity)
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    showNotification(data.error || 'Ошибка обновления количества', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка сети', 'error');
-            });
+                    {% for item in cart_items %}
+                    <div class="cart-item border-bottom py-3" data-product-id="{{ item.product_id if item.product_id else item.products.id }}">
+                        <div class="row align-items-center">
+                            <!-- Checkbox -->
+                            <div class="col-auto">
+                                <div class="form-check">
+                                    <input class="form-check-input item-checkbox" type="checkbox" checked>
+                                </div>
+                            </div>
+
+                            <!-- Product Image -->
+                            <div class="col-auto">
+                                <img src="{{ item.products.image }}" alt="{{ item.products.name }}" 
+                                     class="rounded" style="width: 80px; height: 80px; object-fit: cover;"
+                                     onerror="this.src='https://via.placeholder.com/80x80/FF6600/FFFFFF?text=AliExpress'">
+                            </div>
+
+                            <!-- Product Info -->
+                            <div class="col">
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('product_detail', product_id=item.products.id) }}" 
+                                       class="text-decoration-none text-dark">
+                                        {{ item.products.name }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">{{ item.products.category }}</small>
+                                {% if item.products.discount > 0 %}
+                                    <div class="mt-1">
+                                        <span class="badge bg-danger">-{{ item.products.discount }}%</span>
+                                        <small class="text-success ms-2">
+                                            <i class="fas fa-shipping-fast"></i>
+                                            Выбор AliExpress
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Price -->
+                            <div class="col-auto text-center">
+                                {% set discounted_price = item.products.price * (1 - item.products.discount / 100) %}
+                                <div class="fw-bold" style="color: var(--aliexpress-red);">
+                                    ₽{{ "%.0f"|format(discounted_price * 75) }}
+                                </div>
+                                {% if item.products.discount > 0 %}
+                                    <small class="text-muted text-decoration-line-through">
+                                        ₽{{ "%.0f"|format(item.products.price * 75) }}
+                                    </small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Quantity Controls -->
+                            <div class="col-auto">
+                                <div class="d-flex align-items-center border rounded" style="width: fit-content;">
+                                    <button class="btn btn-sm btn-outline-secondary border-0" 
+                                            onclick="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', {{ item.quantity - 1 }})"
+                                            style="width: 32px; height: 32px;">-</button>
+                                    <input type="number" class="form-control border-0 text-center" 
+                                           value="{{ item.quantity }}" min="1" 
+                                           style="width: 50px; height: 32px;"
+                                           onchange="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', this.value)">
+                                    <button class="btn btn-sm btn-outline-secondary border-0" 
+                                            onclick="updateQuantity('{{ item.product_id if item.product_id else item.products.id }}', {{ item.quantity + 1 }})"
+                                            style="width: 32px; height: 32px;">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Total Price -->
+                            <div class="col-auto text-center">
+                                <div class="fw-bold" style="color: var(--aliexpress-red);">
+                                    ₽{{ "%.0f"|format(discounted_price * 75 * item.quantity) }}
+                                </div>
+                            </div>
+
+                            <!-- Remove Button -->
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="removeFromCart('{{ item.product_id if item.product_id else item.products.id }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Recommended Products -->
+                <div class="bg-white rounded shadow-sm p-3">
+                    <h5 class="mb-3">
+                        <i class="fas fa-heart text-danger me-2"></i>
+                        Рекомендуем также
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <img src="https://via.placeholder.com/150x150/FF6600/FFFFFF?text=Товар" 
+                                     class="img-fluid rounded mb-2" alt="Рекомендуемый товар">
+                                <small class="text-muted d-block">Похожий товар</small>
+                                <small class="fw-bold" style="color: var(--aliexpress-red);">₽1,250</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <img src="https://via.placeholder.com/150x150/FF6600/FFFFFF?text=Товар" 
+                                     class="img-fluid rounded mb-2" alt="Рекомендуемый товар">
+                                <small class="text-muted d-block">Похожий товар</small>
+                                <small class="fw-bold" style="color: var(--aliexpress-red);">₽890</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <img src="https://via.placeholder.com/150x150/FF6600/FFFFFF?text=Товар" 
+                                     class="img-fluid rounded mb-2" alt="Рекомендуемый товар">
+                                <small class="text-muted d-block">Похожий товар</small>
+                                <small class="fw-bold" style="color: var(--aliexpress-red);">₽1,650</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <img src="https://via.placeholder.com/150x150/FF6600/FFFFFF?text=Товар" 
+                                     class="img-fluid rounded mb-2" alt="Рекомендуемый товар">
+                                <small class="text-muted d-block">Похожий товар</small>
+                                <small class="fw-bold" style="color: var(--aliexpress-red);">₽2,100</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="bg-white rounded shadow-sm p-3 sticky-top" style="top: 1rem;">
+                    <h5 class="mb-3">Сводка заказа</h5>
+
+                    <!-- Promo Code -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Промокод">
+                            <button class="btn btn-outline-secondary">Применить</button>
+                        </div>
+                    </div>
+
+                    <!-- Price Breakdown -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Товары ({{ cart_items|length }}):</span>
+                            <span>₽{{ "%.0f"|format(total * 75) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Доставка:</span>
+                            <span class="text-success">Бесплатно</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Скидка:</span>
+                            <span class="text-danger">-₽{{ "%.0f"|format((total * 0.15) * 75) }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Итого:</strong>
+                            <strong style="color: var(--aliexpress-red); font-size: 1.25rem;">
+                                ₽{{ "%.0f"|format(total * 75) }}
+                            </strong>
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-shield-alt text-success me-2"></i>
+                            <small>Защита покупателя</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-truck text-info me-2"></i>
+                            <small>Отслеживание доставки</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-undo text-warning me-2"></i>
+                            <small>15 дней на возврат</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-medal text-primary me-2"></i>
+                            <small>Гарантия качества</small>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Button -->
+                    {% if session.user_id %}
+                        <a href="{{ url_for('checkout') }}" class="btn btn-primary w-100 mb-2"
+                           style="background: var(--aliexpress-orange); border-color: var(--aliexpress-orange);">
+                            <i class="fas fa-credit-card me-2"></i>
+                            Оформить заказ
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-primary w-100 mb-2"
+                           style="background: var(--aliexpress-orange); border-color: var(--aliexpress-orange);">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Войти для покупки
+                        </a>
+                    {% endif %}
+
+                    <button class="btn btn-outline-primary w-100">
+                        <i class="fas fa-heart me-2"></i>
+                        Добавить в избранное
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Empty Cart -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shopping-cart" style="font-size: 5rem; color: var(--gray-300);"></i>
+            </div>
+            <h3 class="mb-3">Ваша корзина пуста</h3>
+            <p class="text-muted mb-4">Найдите что-то особенное в наших рекомендациях</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary"
+               style="background: var(--aliexpress-orange); border-color: var(--aliexpress-orange);">
+                <i class="fas fa-search me-2"></i>
+                Начать покупки
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Cart functionality
+function updateQuantity(productId, quantity) {
+    if (quantity < 1) {
+        removeFromCart(productId);
+        return;
+    }
+
+    fetch('/api/cart/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: parseInt(quantity)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showNotification(data.error || 'Ошибка обновления количества', 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сети', 'error');
+    });
+}
 
-        function removeFromCart(productId) {
-            if (!confirm('Удалить товар из корзины?')) {
-                return;
-            }
+function removeFromCart(productId) {
+    if (!confirm('Удалить товар из корзины?')) {
+        return;
+    }
 
-            fetch('/api/cart/remove', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: productId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    showNotification(data.error || 'Ошибка удаления товара', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка сети', 'error');
-            });
+    fetch('/api/cart/remove', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showNotification(data.error || 'Ошибка удаления товара', 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сети', 'error');
+    });
+}
 
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
+function clearSelected() {
+    const selected = document.querySelectorAll('.item-checkbox:checked');
+    if (selected.length === 0) {
+        showNotification('Выберите товары для удаления', 'info');
+        return;
+    }
 
-        function addToCart(productId) {
-            fetch('/api/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    quantity: 1
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Товар добавлен в корзину!', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification(data.error || 'Ошибка добавления товара', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка сети', 'error');
-            });
-        }
+    if (!confirm(`Удалить ${selected.length} товаров из корзины?`)) {
+        return;
+    }
 
-        function toggleWishlist(productId) {
-            // Реализация списка желаний
-            showNotification('Функция списка желаний будет добавлена позже', 'info');
-        }
-    </script>
-</body>
-</html>
+    // Remove selected items (implementation depends on your backend)
+    showNotification('Выбранные товары удалены', 'success');
+}
+
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+function showNotification(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

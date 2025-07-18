@@ -4,100 +4,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SHEIN Market - {{ _['home_title'] if _ else 'Fashion Shopping' }}{% endblock %}</title>
+    <title>{% block title %}AliExpress - {{ _['home_title'] if _ else 'Глобальный онлайн-шоппинг' }}{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0idXJsKCNncmFkaWVudDApIi8+CjxwYXRoIGQ9Ik04IDE2TDE2IDhMMjQgMTZMMTYgMjRMOCAxNloiIGZpbGw9IndoaXRlIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRpZW50MCIgeDE9IjAiIHkxPSIwIiB4Mj0iMzIiIHkyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjN0I2OEVFIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGMTQ5MyIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iI0ZGNjYwMCIvPgo8cGF0aCBkPSJNOCAxNkwxNiA4TDI0IDE2TDE2IDI0TDggMTZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
     
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="#">Продавать на AliExpress</a>
+                    <a href="#">Мобильное приложение</a>
+                    <a href="#">Помощь</a>
+                </div>
+                <div>
+                    <a href="#">RU / ₽ RUB</a>
+                    <a href="#">Служба поддержки</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="modern-header">
         <div class="container-fluid">
-            <div class="d-flex align-items-center justify-content-between">
-                <!-- Brand -->
-                <a href="{{ url_for('index') }}" class="modern-brand">
-                    <div class="brand-icon">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
-                    <div>
-                        <div class="brand-text">SHEIN</div>
-                        <div class="brand-subtitle">Market</div>
-                    </div>
-                </a>
-
-                <!-- Search -->
-                <div class="search-container d-none d-md-block">
-                    <form class="search-form" action="{{ url_for('search') }}" method="GET">
-                        <i class="search-icon fas fa-search"></i>
-                        <input type="text" class="search-input" name="q" id="search-input" 
-                               placeholder="{{ _['search_placeholder'] if _ else 'Search products...' }}"
-                               value="{{ request.args.get('q', '') }}">
-                        <button type="submit" class="search-btn">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Actions -->
-                <div class="header-actions d-flex">
-                    <!-- Language Selector -->
-                    <div class="language-selector d-none d-lg-flex">
-                        {% for lang_code, lang_info in languages.items() %}
-                        <a href="{{ url_for('set_language', language=lang_code) }}" 
-                           class="lang-btn {{ 'active' if current_lang == lang_code else '' }}">
-                            {{ lang_info.icon }}
-                        </a>
-                        {% endfor %}
-                    </div>
-
-                    <!-- User Actions -->
-                    {% if session.user_id %}
-                        <div class="dropdown">
-                            <button class="btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-2"></i>{{ session.username }}
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('profile') }}">
-                                    <i class="fas fa-user me-2"></i>{{ _['profile'] if _ else 'Profile' }}
-                                </a></li>
-                                {% if session.is_admin %}
-                                <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}">
-                                    <i class="fas fa-cog me-2"></i>{{ _['admin_panel'] if _ else 'Admin Panel' }}
-                                </a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                    <i class="fas fa-sign-out-alt me-2"></i>{{ _['logout'] if _ else 'Logout' }}
-                                </a></li>
-                            </ul>
+            <div class="main-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <!-- Brand -->
+                    <a href="{{ url_for('index') }}" class="modern-brand">
+                        <div class="brand-icon">
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
-                    {% else %}
-                        <div class="auth-buttons">
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
-                                {{ _['login'] if _ else 'Login' }}
-                            </a>
-                            <a href="{{ url_for('register') }}" class="btn btn-primary">
-                                {{ _['register'] if _ else 'Register' }}
-                            </a>
+                        <div>
+                            <div class="brand-text">AliExpress</div>
+                            <div class="brand-subtitle">{{ _['home_title'] if _ else 'Умный шоппинг' }}</div>
                         </div>
-                    {% endif %}
-
-                    <!-- Cart -->
-                    <a href="{{ url_for('cart') }}" class="cart-btn">
-                        <i class="fas fa-shopping-cart"></i>
-                        {% if cart_count and cart_count > 0 %}
-                        <span class="cart-count">{{ cart_count }}</span>
-                        {% endif %}
                     </a>
+
+                    <!-- Search -->
+                    <div class="search-container d-none d-md-block">
+                        <form class="search-form" action="{{ url_for('search') }}" method="GET">
+                            <i class="search-icon fas fa-search"></i>
+                            <input type="text" class="search-input" name="q" 
+                                   placeholder="{{ _['search_placeholder'] if _ else 'телефон, платье, наушники...' }}"
+                                   value="{{ request.args.get('q', '') }}">
+                            <button type="submit" class="search-btn">
+                                {{ _['search'] if _ else 'Поиск' }}
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="header-actions d-flex">
+                        <!-- Language Selector -->
+                        <div class="language-selector d-none d-lg-flex">
+                            {% for lang_code, lang_info in languages.items() %}
+                            <a href="{{ url_for('set_language', language=lang_code) }}" 
+                               class="lang-btn {{ 'active' if current_lang == lang_code else '' }}">
+                                {{ lang_info.icon }}
+                            </a>
+                            {% endfor %}
+                        </div>
+
+                        <!-- User Actions -->
+                        {% if session.user_id %}
+                            <div class="dropdown">
+                                <button class="btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user me-1"></i>{{ session.username }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                        <i class="fas fa-user me-2"></i>{{ _['profile'] if _ else 'Мой профиль' }}
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="fas fa-box me-2"></i>{{ _['my_orders'] if _ else 'Мои заказы' }}
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="fas fa-heart me-2"></i>{{ _['wishlist'] if _ else 'Список желаний' }}
+                                    </a></li>
+                                    {% if session.is_admin %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}">
+                                            <i class="fas fa-cog me-2"></i>{{ _['admin_panel'] if _ else 'Админ-панель' }}
+                                        </a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>{{ _['logout'] if _ else 'Выйти' }}
+                                    </a></li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <div class="auth-buttons">
+                                <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
+                                    {{ _['login'] if _ else 'Войти' }}
+                                </a>
+                                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                                    {{ _['register'] if _ else 'Регистрация' }}
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <!-- Cart -->
+                        <a href="{{ url_for('cart') }}" class="cart-btn">
+                            <i class="fas fa-shopping-cart"></i>
+                            {% if cart_count and cart_count > 0 %}
+                            <span class="cart-count">{{ cart_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Bar -->
+            <div class="nav-bar">
+                <div class="nav-categories">
+                    <a href="#" class="nav-category">Все категории</a>
+                    <a href="#" class="nav-category">Женская одежда</a>
+                    <a href="#" class="nav-category">Мужская одежда</a>
+                    <a href="#" class="nav-category">Телефоны</a>
+                    <a href="#" class="nav-category">Компьютеры</a>
+                    <a href="#" class="nav-category">Дом и сад</a>
+                    <a href="#" class="nav-category">Сумки и обувь</a>
+                    <a href="#" class="nav-category">Игрушки</a>
+                    <a href="#" class="nav-category">Спорт</a>
+                    <a href="#" class="nav-category">Автотовары</a>
                 </div>
             </div>
         </div>
@@ -126,63 +170,68 @@
     <footer class="modern-footer">
         <div class="container">
             <div class="row">
-                <div class="col-lg-4 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="footer-brand">
-                        <div class="brand-icon">
-                            <i class="fas fa-shopping-bag"></i>
+                        <h5>AliExpress</h5>
+                        <p>{{ _['footer_description'] if _ else 'Глобальная торговая площадка для потребителей по всему миру. Качественные товары по доступным ценам.' }}</p>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
                         </div>
-                        <h5>SHEIN Market</h5>
-                        <p>{{ _['footer_description'] if _ else 'Your trusted fashion marketplace with the latest trends and best prices.' }}</p>
                     </div>
                 </div>
-                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                <div class="col-lg-2 col-md-6 mb-4">
                     <ul class="footer-links">
-                        <h6>{{ _['company'] if _ else 'Company' }}</h6>
-                        <li><a href="#">{{ _['about_us'] if _ else 'About Us' }}</a></li>
-                        <li><a href="#">{{ _['contact'] if _ else 'Contact' }}</a></li>
-                        <li><a href="#">{{ _['careers'] if _ else 'Careers' }}</a></li>
-                        <li><a href="#">{{ _['blog'] if _ else 'Blog' }}</a></li>
+                        <h6>{{ _['customer_service'] if _ else 'Покупателям' }}</h6>
+                        <li><a href="#">{{ _['mobile_app'] if _ else 'Мобильное приложение' }}</a></li>
+                        <li><a href="#">{{ _['buyer_protection'] if _ else 'Защита покупателя' }}</a></li>
+                        <li><a href="#">{{ _['help_center'] if _ else 'Центр помощи' }}</a></li>
+                        <li><a href="#">{{ _['customer_support'] if _ else 'Служба поддержки' }}</a></li>
+                        <li><a href="#">{{ _['report_infringement'] if _ else 'Сообщить о нарушении' }}</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                <div class="col-lg-2 col-md-6 mb-4">
                     <ul class="footer-links">
-                        <h6>{{ _['help'] if _ else 'Help' }}</h6>
-                        <li><a href="#">{{ _['faq'] if _ else 'FAQ' }}</a></li>
-                        <li><a href="#">{{ _['shipping'] if _ else 'Shipping' }}</a></li>
-                        <li><a href="#">{{ _['returns'] if _ else 'Returns' }}</a></li>
-                        <li><a href="#">{{ _['size_guide'] if _ else 'Size Guide' }}</a></li>
+                        <h6>{{ _['for_sellers'] if _ else 'Продавцам' }}</h6>
+                        <li><a href="#">{{ _['sell_on_aliexpress'] if _ else 'Продавать на AliExpress' }}</a></li>
+                        <li><a href="#">{{ _['seller_center'] if _ else 'Центр продавца' }}</a></li>
+                        <li><a href="#">{{ _['policies'] if _ else 'Политики' }}</a></li>
+                        <li><a href="#">{{ _['become_partner'] if _ else 'Стать партнером' }}</a></li>
+                        <li><a href="#">{{ _['advertising'] if _ else 'Реклама' }}</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                <div class="col-lg-2 col-md-6 mb-4">
                     <ul class="footer-links">
-                        <h6>{{ _['account'] if _ else 'Account' }}</h6>
-                        <li><a href="{{ url_for('profile') if session.user_id else url_for('login') }}">{{ _['my_account'] if _ else 'My Account' }}</a></li>
-                        <li><a href="{{ url_for('cart') }}">{{ _['shopping_cart'] if _ else 'Shopping Cart' }}</a></li>
-                        <li><a href="#">{{ _['wishlist'] if _ else 'Wishlist' }}</a></li>
-                        <li><a href="#">{{ _['order_history'] if _ else 'Order History' }}</a></li>
+                        <h6>{{ _['company'] if _ else 'Компания' }}</h6>
+                        <li><a href="#">{{ _['about_us'] if _ else 'О нас' }}</a></li>
+                        <li><a href="#">{{ _['news'] if _ else 'Новости' }}</a></li>
+                        <li><a href="#">{{ _['careers'] if _ else 'Карьера' }}</a></li>
+                        <li><a href="#">{{ _['intellectual_property'] if _ else 'Интеллектуальная собственность' }}</a></li>
+                        <li><a href="#">{{ _['privacy'] if _ else 'Конфиденциальность' }}</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <ul class="footer-links">
-                        <h6>{{ _['follow_us'] if _ else 'Follow Us' }}</h6>
-                        <li class="social-links">
-                            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
-                        </li>
+                        <h6>{{ _['contact_us'] if _ else 'Связаться с нами' }}</h6>
+                        <li><a href="#">{{ _['hotline'] if _ else 'Горячая линия: 8-800-555-0199' }}</a></li>
+                        <li><a href="#">{{ _['email_support'] if _ else 'Email: support@aliexpress.ru' }}</a></li>
+                        <li><a href="#">{{ _['working_hours'] if _ else 'Время работы: 24/7' }}</a></li>
+                        <li><a href="#">{{ _['address'] if _ else 'Адрес: Москва, Россия' }}</a></li>
                     </ul>
                 </div>
             </div>
             
             <div class="footer-bottom">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
-                    <p class="mb-0">&copy; 2024 SHEIN Market. {{ _['all_rights_reserved'] if _ else 'All rights reserved.' }}</p>
+                    <p class="mb-0">&copy; 2024 AliExpress. {{ _['all_rights_reserved'] if _ else 'Все права защищены.' }}</p>
                     <div class="payment-methods">
                         <i class="fab fa-cc-visa"></i>
                         <i class="fab fa-cc-mastercard"></i>
                         <i class="fab fa-cc-paypal"></i>
-                        <i class="fab fa-cc-stripe"></i>
+                        <i class="fab fa-cc-discover"></i>
+                        <i class="fab fa-cc-american-express"></i>
                     </div>
                 </div>
             </div>
