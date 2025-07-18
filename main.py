@@ -654,6 +654,12 @@ def login():
                          current_lang=current_lang,
                          languages=LANGUAGES)
 
+@app.route('/set_language/<language>')
+def set_language(language):
+    if language in LANGUAGES:
+        session[Config.LANGUAGE_SESSION_KEY] = language
+    return redirect(request.referrer or url_for('index'))
+
 @app.route('/logout')
 def logout():
     session.clear()
