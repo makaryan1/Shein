@@ -283,7 +283,54 @@
                             <span class="badge badge-shipping">Бесплатная доставка</span>
                         </div>
                         <div class="product-overlay">
-                            <button class="btn btn-quick-view" onclick="quickView('{{ product.id }}')">
+                            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-quick-view">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">{{ product.category }}</div>
+                        <h3 class="product-title">
+                            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="text-decoration-none text-dark">
+                                {{ product.name }}
+                            </a>
+                        </h3>
+                        <div class="product-rating">
+                            <div class="stars">
+                                {% for i in range(5) %}
+                                    {% if i < product.rating %}
+                                        ★
+                                    {% else %}
+                                        ☆
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">({{ product.reviews_count or 0 }})</span>
+                        </div>
+                        <div class="product-price">
+                            {% set discounted_price = product.price * (1 - product.discount / 100) %}
+                            <span class="current-price">${{ "%.2f"|format(discounted_price) }}</span>
+                            {% if product.discount > 0 %}
+                                <span class="original-price">${{ "%.2f"|format(product.price) }}</span>
+                                <span class="discount-badge">-{{ product.discount }}%</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-actions">
+                            {% if session.user_id %}
+                                <button class="add-to-cart-btn btn-primary" onclick="addToCart('{{ product.id }}')">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    В корзину
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="add-to-cart-btn btn-primary text-decoration-none">
+                                    <i class="fas fa-user-plus"></i>
+                                    Войти для покупки
+                                </a>
+                            {% endif %}
+                            <button class="wishlist-btn" onclick="toggleWishlist('{{ product.id }}')">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
                                 <i class="fas fa-eye"></i>
                                 Быстрый просмотр
                             </button>

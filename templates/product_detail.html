@@ -1,0 +1,506 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} - TemuClone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary-orange: #ff6f43;
+            --secondary-pink: #ff2d92;
+            --primary-purple: #8b5cf6;
+            --success-green: #22c55e;
+            --danger-coral: #ef4444;
+            --gradient-primary: linear-gradient(135deg, var(--primary-orange), var(--secondary-pink));
+            --gradient-secondary: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+        }
+
+        .product-detail-container {
+            padding: 2rem 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .product-images {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .main-image {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .thumbnail-images {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .thumbnail:hover,
+        .thumbnail.active {
+            border-color: var(--primary-orange);
+            transform: scale(1.05);
+        }
+
+        .product-info {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .product-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stars {
+            color: #fbbf24;
+            font-size: 1.2rem;
+        }
+
+        .rating-text {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .product-price {
+            margin-bottom: 2rem;
+        }
+
+        .current-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-orange);
+        }
+
+        .original-price {
+            font-size: 1.2rem;
+            color: #9ca3af;
+            text-decoration: line-through;
+            margin-left: 0.5rem;
+        }
+
+        .discount-badge {
+            background: var(--danger-coral);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-left: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        .product-description {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .quantity-btn {
+            background: #f3f4f6;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quantity-btn:hover {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .quantity-input {
+            border: none;
+            width: 60px;
+            height: 40px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-add-cart {
+            flex: 2;
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .btn-add-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 111, 67, 0.3);
+        }
+
+        .btn-wishlist {
+            background: white;
+            border: 2px solid var(--primary-orange);
+            color: var(--primary-orange);
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .btn-wishlist:hover {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .similar-products {
+            margin-top: 4rem;
+        }
+
+        .similar-product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .similar-product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .back-btn {
+            background: white;
+            border: 2px solid var(--primary-orange);
+            color: var(--primary-orange);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--primary-orange);
+            color: white;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .product-detail-container {
+                padding: 1rem 0;
+            }
+            
+            .product-info {
+                padding: 1.5rem;
+                margin-top: 1rem;
+            }
+            
+            .product-title {
+                font-size: 1.5rem;
+            }
+            
+            .current-price {
+                font-size: 2rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="navbar navbar-expand-lg navbar-dark" style="background: var(--gradient-primary);">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="{{ url_for('index') }}">
+                <i class="fas fa-shopping-bag me-2"></i>TemuClone
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <!-- Language Selector -->
+                <div class="dropdown me-3">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        {{ languages[current_lang].icon }} {{ languages[current_lang].name }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for code, lang in languages.items() %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('set_language', language=code) }}">
+                                {{ lang.icon }} {{ lang.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {% if session.user_id %}
+                    <div class="user-menu me-3">
+                        <span class="text-white">
+                            <i class="fas fa-user-circle"></i> {{ session.username }}
+                        </span>
+                    </div>
+                {% endif %}
+                
+                <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ cart_count or 0 }}
+                    </span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="product-detail-container">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Назад к товарам
+            </a>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="product-images">
+                        <img src="{{ product.image }}" alt="{{ product.name }}" class="main-image" id="mainImage">
+                        <div class="thumbnail-images">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail active" onclick="changeMainImage(this)">
+                            {% for i in range(3) %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail" onclick="changeMainImage(this)">
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="product-info">
+                        <h1 class="product-title">{{ product.name }}</h1>
+                        
+                        <div class="product-rating">
+                            <div class="stars">
+                                {% for i in range(5) %}
+                                    {% if i < product.rating %}
+                                        ★
+                                    {% else %}
+                                        ☆
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">({{ product.rating }}) • {{ product.reviews_count or 0 }} отзывов</span>
+                        </div>
+
+                        <div class="product-price">
+                            {% set discounted_price = product.price * (1 - product.discount / 100) %}
+                            <span class="current-price">${{ "%.2f"|format(discounted_price) }}</span>
+                            {% if product.discount > 0 %}
+                                <span class="original-price">${{ "%.2f"|format(product.price) }}</span>
+                                <span class="discount-badge">-{{ product.discount }}%</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="product-description">
+                            <h5>Описание товара</h5>
+                            <p>{{ product.description or 'Премиальное качество материалов и современный дизайн. Идеальное сочетание комфорта и стиля для повседневной носки. Трендовая модель из новой коллекции с уникальным кроем.' }}</p>
+                        </div>
+
+                        <div class="quantity-selector">
+                            <label class="fw-bold">Количество:</label>
+                            <div class="quantity-controls">
+                                <button class="quantity-btn" onclick="decreaseQuantity()">-</button>
+                                <input type="number" class="quantity-input" id="quantity" value="1" min="1">
+                                <button class="quantity-btn" onclick="increaseQuantity()">+</button>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            {% if session.user_id %}
+                                <button class="btn btn-add-cart" onclick="addToCart('{{ product.id }}')">
+                                    <i class="fas fa-shopping-cart me-2"></i>
+                                    Добавить в корзину
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('register') }}" class="btn btn-add-cart text-decoration-none">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    Войти для покупки
+                                </a>
+                            {% endif %}
+                            <button class="btn-wishlist">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+
+                        <div class="product-features mt-4">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="feature">
+                                        <i class="fas fa-shipping-fast text-success me-2"></i>
+                                        <span>Бесплатная доставка</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="feature">
+                                        <i class="fas fa-undo text-info me-2"></i>
+                                        <span>30 дней возврата</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Products -->
+            {% if similar_products %}
+            <div class="similar-products">
+                <h3 class="mb-4">Похожие товары</h3>
+                <div class="row">
+                    {% for similar in similar_products[:4] %}
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="similar-product-card">
+                            <img src="{{ similar.image }}" alt="{{ similar.name }}" class="w-100" style="height: 200px; object-fit: cover;">
+                            <div class="p-3">
+                                <h6>{{ similar.name }}</h6>
+                                <div class="text-primary fw-bold">
+                                    ${{ "%.2f"|format(similar.price * (1 - similar.discount / 100)) }}
+                                </div>
+                                <a href="{{ url_for('product_detail', product_id=similar.id) }}" class="btn btn-outline-primary btn-sm mt-2">
+                                    Подробнее
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function changeMainImage(thumbnail) {
+            document.getElementById('mainImage').src = thumbnail.src;
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            thumbnail.classList.add('active');
+        }
+
+        function increaseQuantity() {
+            const input = document.getElementById('quantity');
+            input.value = parseInt(input.value) + 1;
+        }
+
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+            }
+        }
+
+        function addToCart(productId) {
+            const quantity = document.getElementById('quantity').value;
+            
+            fetch('/api/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: parseInt(quantity)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Товар добавлен в корзину!', 'success');
+                    updateCartCount();
+                } else {
+                    showNotification(data.error || 'Ошибка добавления товара', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка сети', 'error');
+            });
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function updateCartCount() {
+            // Обновляем счетчик корзины
+            location.reload();
+        }
+    </script>
+</body>
+</html>
