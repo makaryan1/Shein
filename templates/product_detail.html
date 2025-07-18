@@ -322,11 +322,11 @@
             <div class="row">
                 <div class="col-lg-6">
                     <div class="product-images">
-                        <img src="{{ product.image }}" alt="{{ product.name }}" class="main-image" id="mainImage">
+                        <img src="{{ product.image }}" alt="{{ product.name }}" class="main-image" id="mainImage" onerror="this.src='https://via.placeholder.com/600x700/7B68EE/FFFFFF?text=SHEIN+Product'">
                         <div class="thumbnail-images">
-                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail active" onclick="changeMainImage(this)">
-                            {% for i in range(3) %}
-                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail" onclick="changeMainImage(this)">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="thumbnail active" onclick="changeMainImage(this)" onerror="this.src='https://via.placeholder.com/80x80/7B68EE/FFFFFF?text=1'">
+                            {% for i in range(2, 5) %}
+                            <img src="https://picsum.photos/600/700?random={{ product.id }}{{ i }}" alt="{{ product.name }}" class="thumbnail" onclick="changeMainImage(this)" onerror="this.src='https://via.placeholder.com/80x80/7B68EE/FFFFFF?text={{ i }}'">
                             {% endfor %}
                         </div>
                     </div>

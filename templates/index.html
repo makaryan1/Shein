@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="{{ current_lang }}">
 <head>
@@ -605,7 +604,7 @@
             } else if (type === 'high') {
                 products.sort((a, b) => parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating));
             }
-            
+
             const container = document.getElementById('products-grid');
             products.forEach(product => container.appendChild(product));
             updateFilterButtons();
@@ -639,7 +638,7 @@
         function toggleWishlist(productId) {
             const btn = event.target.closest('.btn-wishlist');
             const icon = btn.querySelector('i');
-            
+
             if (icon.classList.contains('far')) {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
@@ -657,10 +656,10 @@
         function quickView(productId) {
             const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
             const content = document.getElementById('quickViewContent');
-            
+
             content.innerHTML = '<div class="text-center p-4"><div class="loading-spinner"></div><p>Загрузка...</p></div>';
             modal.show();
-            
+
             // Simulate loading product data
             setTimeout(() => {
                 content.innerHTML = `
@@ -700,11 +699,11 @@
             const btn = event.target.closest('.btn-load-more');
             const btnText = btn.querySelector('.btn-text');
             const btnLoading = btn.querySelector('.btn-loading');
-            
+
             btnText.style.display = 'none';
             btnLoading.style.display = 'flex';
             btn.disabled = true;
-            
+
             setTimeout(() => {
                 btnText.style.display = 'flex';
                 btnLoading.style.display = 'none';
@@ -718,30 +717,30 @@
             document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     const originalHTML = this.innerHTML;
                     this.innerHTML = '<div class="loading-spinner"></div> Добавляем...';
                     this.disabled = true;
-                    
+
                     setTimeout(() => {
                         this.innerHTML = '<i class="fas fa-check"></i> Добавлено!';
                         this.classList.add('success');
-                        
+
                         // Update cart count
                         const cartCount = document.querySelector('.cart-count');
                         const currentCount = parseInt(cartCount.textContent) || 0;
                         cartCount.textContent = currentCount + 1;
                         cartCount.classList.add('bounce');
-                        
+
                         showToast('Товар добавлен в корзину!', 'success');
-                        
+
                         setTimeout(() => {
                             this.innerHTML = originalHTML;
                             this.disabled = false;
                             this.classList.remove('success');
                             cartCount.classList.remove('bounce');
                         }, 2000);
-                        
+
                         // Navigate to add to cart
                         setTimeout(() => {
                             window.location.href = this.href;
@@ -781,9 +780,9 @@
                     <span>${message}</span>
                 </div>
             `;
-            
+
             document.body.appendChild(toast);
-            
+
             setTimeout(() => toast.classList.add('show'), 100);
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -804,6 +803,61 @@
         function toggleMobileMenu() {
             const mobileMenu = document.querySelector('.mobile-menu');
             mobileMenu.classList.toggle('active');
+        }
+
+        // Add to cart function
+        function addToCart(productId) {
+            const btn = event.target.closest('.add-to-cart-btn');
+            const originalHTML = btn.innerHTML;
+
+            btn.innerHTML = '<div class="loading-spinner"></div> Добавляем...';
+            btn.disabled = true;
+
+            // Отправляем запрос на сервер
+            fetch('/api/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Добавлено!';
+                    btn.classList.add('success');
+
+                    // Update cart count
+                    const cartCount = document.querySelector('.cart-count');
+                    if (data.cart_count) {
+                        cartCount.textContent = data.cart_count;
+                    } else {
+                        const currentCount = parseInt(cartCount.textContent) || 0;
+                        cartCount.textContent = currentCount + 1;
+                    }
+
+                    showToast('Товар добавлен в корзину!', 'success');
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        btn.classList.remove('success');
+                    }, 2000);
+                } else {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    showToast(data.error || 'Ошибка добавления товара', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                showToast('Ошибка сети. Товар не добавлен.', 'error');
+            });
         }
     </script>
 </body>

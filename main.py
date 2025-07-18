@@ -149,18 +149,36 @@ class SheinProductGenerator:
             'in_stock': True,
             'specifications': self._generate_specifications(category_id, category),
             'shipping_info': self._generate_shipping_info(),
-            'tags': self._generate_tags(category_id)
+            'tags': self._generate_tags(category_id),
+            'brand': 'SHEIN',
+            'material': random.choice(category['materials']),
+            'care_instructions': 'Машинная стирка при 30°C',
+            'country_origin': 'Китай'
         }
 
     def _generate_product_image(self, category_id: str, index: int) -> str:
         """Генерирует URL изображения продукта"""
-        colors = ['FF6F43', 'FF69B4', '4169E1', '32CD32', 'FF4500', 'DA70D6', '20B2AA']
-        color = random.choice(colors)
-        return f'https://via.placeholder.com/405x552/{color}/FFFFFF?text=SHEIN+{category_id.upper()}+{index}'
+        # Используем разные источники изображений для лучшего качества
+        image_sources = [
+            f'https://picsum.photos/405/552?random={category_id}{index}',
+            f'https://source.unsplash.com/405x552/?fashion,{category_id}',
+            f'https://loremflickr.com/405/552/fashion,clothing?random={index}',
+            f'https://via.placeholder.com/405x552/7B68EE/FFFFFF?text=SHEIN+Product+{index}'
+        ]
+        return random.choice(image_sources)
 
     def _generate_image_gallery(self, category_id: str) -> List[str]:
         """Генерирует галерею изображений"""
-        return [self._generate_product_image(category_id, i) for i in range(1, 5)]
+        gallery = []
+        for i in range(1, 5):
+            # Разные стили изображений для галереи
+            sources = [
+                f'https://picsum.photos/405/552?random={category_id}{i}{random.randint(1000, 9999)}',
+                f'https://source.unsplash.com/405x552/?{category_id},fashion,style',
+                f'https://loremflickr.com/405/552/{category_id},style?random={i}{random.randint(100, 999)}'
+            ]
+            gallery.append(random.choice(sources))
+        return gallery
 
     def _generate_description(self) -> str:
         """Генерирует описание продукта"""

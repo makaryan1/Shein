@@ -224,7 +224,7 @@
                         <div class="cart-item" data-product-id="{{ item.product_id if item.product_id else item.products.id }}">
                             <div class="row align-items-center">
                                 <div class="col-md-2">
-                                    <img src="{{ item.products.image }}" alt="{{ item.products.name }}" class="item-image">
+                                    <img src="{{ item.products.image }}" alt="{{ item.products.name }}" class="item-image" onerror="this.src='https://via.placeholder.com/120x120/7B68EE/FFFFFF?text=SHEIN'">
                                 </div>
                                 <div class="col-md-4">
                                     <h5 class="mb-1">{{ item.products.name }}</h5>
