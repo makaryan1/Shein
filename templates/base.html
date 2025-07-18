@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'en' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SHEIN Market - {{ _['home_title'] if _ else 'Fashion Shopping' }}{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0idXJsKCNncmFkaWVudDApIi8+CjxwYXRoIGQ9Ik04IDE2TDE2IDhMMjQgMTZMMTYgMjRMOCAxNloiIGZpbGw9IndoaXRlIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRpZW50MCIgeDE9IjAiIHkxPSIwIiB4Mj0iMzIiIHkyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjN0I2OEVFIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGMTQ5MyIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="modern-header">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center justify-content-between">
+                <!-- Brand -->
+                <a href="{{ url_for('index') }}" class="modern-brand">
+                    <div class="brand-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div>
+                        <div class="brand-text">SHEIN</div>
+                        <div class="brand-subtitle">Market</div>
+                    </div>
+                </a>
+
+                <!-- Search -->
+                <div class="search-container d-none d-md-block">
+                    <form class="search-form" action="{{ url_for('search') }}" method="GET">
+                        <i class="search-icon fas fa-search"></i>
+                        <input type="text" class="search-input" name="q" id="search-input" 
+                               placeholder="{{ _['search_placeholder'] if _ else 'Search products...' }}"
+                               value="{{ request.args.get('q', '') }}">
+                        <button type="submit" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Actions -->
+                <div class="header-actions d-flex">
+                    <!-- Language Selector -->
+                    <div class="language-selector d-none d-lg-flex">
+                        {% for lang_code, lang_info in languages.items() %}
+                        <a href="{{ url_for('set_language', language=lang_code) }}" 
+                           class="lang-btn {{ 'active' if current_lang == lang_code else '' }}">
+                            {{ lang_info.icon }}
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- User Actions -->
+                    {% if session.user_id %}
+                        <div class="dropdown">
+                            <button class="btn-user dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-2"></i>{{ session.username }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                    <i class="fas fa-user me-2"></i>{{ _['profile'] if _ else 'Profile' }}
+                                </a></li>
+                                {% if session.is_admin %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}">
+                                    <i class="fas fa-cog me-2"></i>{{ _['admin_panel'] if _ else 'Admin Panel' }}
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>{{ _['logout'] if _ else 'Logout' }}
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="auth-buttons">
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-primary">
+                                {{ _['login'] if _ else 'Login' }}
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-primary">
+                                {{ _['register'] if _ else 'Register' }}
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <!-- Cart -->
+                    <a href="{{ url_for('cart') }}" class="cart-btn">
+                        <i class="fas fa-shopping-cart"></i>
+                        {% if cart_count and cart_count > 0 %}
+                        <span class="cart-count">{{ cart_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="modern-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="footer-brand">
+                        <div class="brand-icon">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <h5>SHEIN Market</h5>
+                        <p>{{ _['footer_description'] if _ else 'Your trusted fashion marketplace with the latest trends and best prices.' }}</p>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                    <ul class="footer-links">
+                        <h6>{{ _['company'] if _ else 'Company' }}</h6>
+                        <li><a href="#">{{ _['about_us'] if _ else 'About Us' }}</a></li>
+                        <li><a href="#">{{ _['contact'] if _ else 'Contact' }}</a></li>
+                        <li><a href="#">{{ _['careers'] if _ else 'Careers' }}</a></li>
+                        <li><a href="#">{{ _['blog'] if _ else 'Blog' }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                    <ul class="footer-links">
+                        <h6>{{ _['help'] if _ else 'Help' }}</h6>
+                        <li><a href="#">{{ _['faq'] if _ else 'FAQ' }}</a></li>
+                        <li><a href="#">{{ _['shipping'] if _ else 'Shipping' }}</a></li>
+                        <li><a href="#">{{ _['returns'] if _ else 'Returns' }}</a></li>
+                        <li><a href="#">{{ _['size_guide'] if _ else 'Size Guide' }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                    <ul class="footer-links">
+                        <h6>{{ _['account'] if _ else 'Account' }}</h6>
+                        <li><a href="{{ url_for('profile') if session.user_id else url_for('login') }}">{{ _['my_account'] if _ else 'My Account' }}</a></li>
+                        <li><a href="{{ url_for('cart') }}">{{ _['shopping_cart'] if _ else 'Shopping Cart' }}</a></li>
+                        <li><a href="#">{{ _['wishlist'] if _ else 'Wishlist' }}</a></li>
+                        <li><a href="#">{{ _['order_history'] if _ else 'Order History' }}</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+                    <ul class="footer-links">
+                        <h6>{{ _['follow_us'] if _ else 'Follow Us' }}</h6>
+                        <li class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <p class="mb-0">&copy; 2024 SHEIN Market. {{ _['all_rights_reserved'] if _ else 'All rights reserved.' }}</p>
+                    <div class="payment-methods">
+                        <i class="fab fa-cc-visa"></i>
+                        <i class="fab fa-cc-mastercard"></i>
+                        <i class="fab fa-cc-paypal"></i>
+                        <i class="fab fa-cc-stripe"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

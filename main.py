@@ -158,14 +158,14 @@ class SheinProductGenerator:
 
     def _generate_product_image(self, category_id: str, index: int) -> str:
         """Генерирует URL изображения продукта"""
-        # Используем разные источники изображений для лучшего качества
+        # Используем стабильные источники изображений
+        seed = abs(hash(f"{category_id}{index}")) % 10000
         image_sources = [
-            f'https://picsum.photos/405/552?random={category_id}{index}',
-            f'https://source.unsplash.com/405x552/?fashion,{category_id}',
-            f'https://loremflickr.com/405/552/fashion,clothing?random={index}',
-            f'https://via.placeholder.com/405x552/7B68EE/FFFFFF?text=SHEIN+Product+{index}'
+            f'https://picsum.photos/405/552?random={seed}',
+            f'https://via.placeholder.com/405x552/7B68EE/FFFFFF?text=SHEIN+{index}',
+            f'https://dummyimage.com/405x552/7B68EE/FFFFFF&text=Product+{index}'
         ]
-        return random.choice(image_sources)
+        return image_sources[seed % len(image_sources)]
 
     def _generate_image_gallery(self, category_id: str) -> List[str]:
         """Генерирует галерею изображений"""
@@ -410,8 +410,24 @@ def load_translations(lang: str = 'en') -> Dict:
         with open(f'translations/{lang}.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        with open('translations/en.json', 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open('translations/en.json', 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            logger.warning("Translation files not found, using default translations")
+            return {
+                "home_title": "Fashion Shopping",
+                "search_placeholder": "Search products...",
+                "login": "Login",
+                "register": "Register",
+                "add_to_cart": "Add to Cart",
+                "cart": "Cart",
+                "profile": "Profile",
+                "logout": "Logout"
+            }
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding translation file: {e}")
+        return load_translations('en') if lang != 'en' else {}
 
 def create_admin_user():
     """Создает администратора при первом запуске"""
@@ -466,11 +482,16 @@ def index():
     categories = list(set([p['category'] for p in db_manager.get_products(limit=100)]))
 
     cart_count = 0
-    if 'user_id' in session:
-        cart_items = cart_manager.get_cart_items(session['user_id'])
-        cart_count = sum(item['quantity'] for item in cart_items)
-    else:
-        cart_count = len(session.get(Config.CART_SESSION_KEY, []))
+    try:
+        if 'user_id' in session:
+            cart_items = cart_manager.get_cart_items(session['user_id'])
+            cart_count = sum(item.get('quantity', 0) for item in cart_items if item.get('quantity'))
+        else:
+            cart_items = session.get(Config.CART_SESSION_KEY, [])
+            cart_count = len(cart_items) if isinstance(cart_items, list) else 0
+    except Exception as e:
+        logger.error(f"Error calculating cart count: {e}")
+        cart_count = 0
 
     return render_template('index.html',
                          products=products,
