@@ -1077,4 +1077,10 @@ if __name__ == '__main__':
     # Use debug=False for production deployment
     debug_mode = os.getenv('FLASK_ENV') == 'development'
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    
+    # Улучшенная конфигурация для production
+    app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+    app.config['DEBUG'] = debug_mode
+    
+    print(f"Starting Flask app on port {port} (debug={debug_mode})")
+    app.run(host='0.0.0.0', port=port, debug=debug_mode, threaded=True)

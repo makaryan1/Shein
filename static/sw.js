@@ -1,46 +1,30 @@
-
-// Service Worker для кэширования ресурсов
-const CACHE_NAME = 'shein-market-v1';
-const urlsToCache = [
-    '/',
-    '/static/css/style.css',
-    '/static/js/main.js',
-    '/static/favicon.ico'
-];
-
-// Установка Service Worker
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                return cache.addAll(urlsToCache);
-            })
-    );
+self.addEventListener('install', function(event) {
+  console.log('Service Worker installing');
+  self.skipWaiting();
 });
 
-// Перехват запросов
-self.addEventListener('fetch', (event) => {
+self.addEventListener('activate', function(event) {
+  console.log('Service Worker activating');
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', function(event) {
+  // Простая стратегия кэширования для статических файлов
+  if (event.request.url.includes('/static/')) {
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Возвращаем кэшированную версию или делаем запрос к серверу
-                return response || fetch(event.request);
+      caches.open('static-cache-v1').then(function(cache) {
+        return cache.match(event.request).then(function(response) {
+          if (response) {
+            return response;
+          }
+          return fetch(event.request).then(function(response) {
+            if (response.status === 200) {
+              cache.put(event.request, response.clone());
             }
-        )
+            return response;
+          });
+        });
+      })
     );
-});
-
-// Активация нового Service Worker
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
+  }
 });
