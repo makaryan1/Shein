@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify, send_from_directory
 import json
 import os
 from dotenv import load_dotenv
@@ -437,6 +437,11 @@ def load_translations(lang='en'):
     except FileNotFoundError:
         with open('translations/en.json', 'r', encoding='utf-8') as f:
             return json.load(f)
+
+# Favicon
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 # Главная страница
 @app.route('/')
