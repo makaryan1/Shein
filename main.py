@@ -752,7 +752,6 @@ def admin_import_shein():
                     'sizes': json.dumps(product.get('sizes', [])),
                     'specifications': json.dumps(product.get('specifications', {})),
                     'shipping_info': json.dumps(product.get('shipping_info', {})),
-                    ```python
                     'tags': json.dumps(product.get('tags', [])),
                     'brand': product.get('brand', 'SHEIN'),
                     'material': product.get('material', ''),
