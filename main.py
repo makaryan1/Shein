@@ -566,6 +566,23 @@ def add_to_cart(product_id):
 
     return redirect(url_for('index'))
 
+# API для добавления в корзину
+@app.route('/api/cart/add', methods=['POST'])
+def api_add_to_cart():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Необходимо войти в систему'}), 401
+
+    data = request.get_json()
+    product_id = data.get('product_id')
+    quantity = data.get('quantity', 1)
+
+    if add_to_cart_db(session['user_id'], product_id, quantity):
+        cart_items = get_cart_items(session['user_id'])
+        cart_count = sum(item['quantity'] for item in cart_items)
+        return jsonify({'success': True, 'cart_count': cart_count})
+
+    return jsonify({'error': 'Ошибка добавления в корзину'}), 500
+
 # API для обновления корзины
 @app.route('/api/cart/update', methods=['POST'])
 def update_cart():
