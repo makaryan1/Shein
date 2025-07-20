@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="{{ current_lang }}">
 <head>
@@ -6,608 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Профиль - SHEIN Market</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <!-- Header -->
-    <header class="temu-header">
-        <div class="container">
-            <nav class="navbar navbar-expand-lg">
-                <a class="navbar-brand" href="{{ url_for('index') }}">
-                    <span class="brand-text">SHEIN Market</span>
-                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
-                </a>
-
-                <div class="search-container mx-auto">
-                    <form class="d-flex" method="GET" action="{{ url_for('search') }}">
-                        <input class="form-control search-input" type="search" name="q" placeholder="Поиск товаров..." aria-label="Search">
-                        <button class="btn btn-search" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <div class="header-actions">
-                    <div class="dropdown me-3">
-                        <a class="btn btn-user dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ session.username }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Профиль</a></li>
-                            {% if session.is_admin %}
-                                <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}">Админ панель</a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Выйти</a></li>
-                        </ul>
-                    </div>
-
-                    <a href="{{ url_for('cart') }}" class="cart-btn">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count">{{ cart_count }}</span>
-                    </a>
-                </div>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="container mt-3">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-
-    <div class="profile-section">
-        <div class="container">
-            <div class="row">
-                <!-- Sidebar -->
-                <div class="col-lg-3 col-md-4">
-                    <div class="profile-sidebar">
-                        <div class="profile-user-card">
-                            <div class="profile-avatar">
-                                <i class="fas fa-user-circle"></i>
-                            </div>
-                            <h5>{{ session.username }}</h5>
-                            <p class="text-muted">Активный покупатель</p>
-                            <div class="user-stats">
-                                <div class="stat">
-                                    <span class="number">24</span>
-                                    <span class="label">Заказов</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="number">98%</span>
-                                    <span class="label">Рейтинг</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="profile-menu">
-                            <a href="#" class="menu-item active" onclick="showTab('profile')">
-                                <i class="fas fa-user"></i> Профиль
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('orders')">
-                                <i class="fas fa-shopping-bag"></i> Мои заказы
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('addresses')">
-                                <i class="fas fa-map-marker-alt"></i> Адреса доставки
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('favorites')">
-                                <i class="fas fa-heart"></i> Избранное
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('payments')">
-                                <i class="fas fa-credit-card"></i> Способы оплаты
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('notifications')">
-                                <i class="fas fa-bell"></i> Уведомления
-                            </a>
-                            <a href="#" class="menu-item" onclick="showTab('settings')">
-                                <i class="fas fa-cog"></i> Настройки
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Content -->
-                <div class="col-lg-9 col-md-8">
-                    <!-- Profile Tab -->
-                    <div id="profile-tab" class="tab-content active">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-user me-2"></i> Информация профиля</h4>
-                            </div>
-                            <div class="card-body">
-                                <form onsubmit="updateProfile(event)">
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Имя</label>
-                                            <input type="text" class="form-control" id="firstName" placeholder="Введите имя">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Фамилия</label>
-                                            <input type="text" class="form-control" id="lastName" placeholder="Введите фамилию">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Email</label>
-                                            <input type="email" class="form-control" value="{{ session.email }}" readonly>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Телефон</label>
-                                            <input type="tel" class="form-control" id="phone" placeholder="+995 555 123 456">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Дата рождения</label>
-                                            <input type="date" class="form-control" id="birthDate">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Пол</label>
-                                            <select class="form-select" id="gender">
-                                                <option value="">Выберите пол</option>
-                                                <option value="male">Мужской</option>
-                                                <option value="female">Женский</option>
-                                                <option value="other">Другой</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save me-2"></i> Сохранить изменения
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Orders Tab -->
-                    <div id="orders-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-shopping-bag me-2"></i> Мои заказы</h4>
-                                <div class="order-filters">
-                                    <select class="form-select">
-                                        <option value="all">Все заказы</option>
-                                        <option value="pending">В обработке</option>
-                                        <option value="shipped">Отправлено</option>
-                                        <option value="delivered">Доставлено</option>
-                                        <option value="cancelled">Отменено</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="orders-list">
-                                    <div class="order-item">
-                                        <div class="order-header">
-                                            <div class="order-info">
-                                                <h6>Заказ #12345</h6>
-                                                <p class="text-muted">15 января 2024</p>
-                                            </div>
-                                            <div class="order-status">
-                                                <span class="badge bg-warning">В пути</span>
-                                            </div>
-                                            <div class="order-total">
-                                                <strong>₾89.99</strong>
-                                            </div>
-                                        </div>
-                                        <div class="order-products">
-                                            <div class="product-item">
-                                                <img src="https://via.placeholder.com/60x60" alt="Product">
-                                                <div class="product-details">
-                                                    <h6>Стильная блуза</h6>
-                                                    <p class="text-muted">Размер: M, Цвет: Белый</p>
-                                                </div>
-                                                <span class="product-price">₾29.99</span>
-                                            </div>
-                                        </div>
-                                        <div class="order-actions">
-                                            <button class="btn btn-outline-primary btn-sm">Отследить</button>
-                                            <button class="btn btn-outline-secondary btn-sm">Повторить заказ</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Addresses Tab -->
-                    <div id="addresses-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-map-marker-alt me-2"></i> Адреса доставки</h4>
-                                <button class="btn btn-primary" onclick="showAddAddressModal()">
-                                    <i class="fas fa-plus me-2"></i> Добавить адрес
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div class="addresses-grid" id="addressesList">
-                                    <div class="address-card">
-                                        <div class="address-header">
-                                            <h6>Домашний адрес</h6>
-                                            <span class="badge bg-success">По умолчанию</span>
-                                        </div>
-                                        <div class="address-details">
-                                            <p><strong>Иван Иванов</strong></p>
-                                            <p>ул. Руставели, 15, кв. 25</p>
-                                            <p>Тбилиси, 0108</p>
-                                            <p>Грузия</p>
-                                            <p><i class="fas fa-phone"></i> +995 555 123 456</p>
-                                        </div>
-                                        <div class="address-actions">
-                                            <button class="btn btn-outline-primary btn-sm">Редактировать</button>
-                                            <button class="btn btn-outline-danger btn-sm">Удалить</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Favorites Tab -->
-                    <div id="favorites-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-heart me-2"></i> Избранное</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="favorites-grid">
-                                    <div class="favorite-item">
-                                        <img src="https://via.placeholder.com/200x200" alt="Product">
-                                        <div class="favorite-details">
-                                            <h6>Стильная блуза</h6>
-                                            <p class="price">₾29.99</p>
-                                            <div class="favorite-actions">
-                                                <button class="btn btn-primary btn-sm">В корзину</button>
-                                                <button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payments Tab -->
-                    <div id="payments-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-credit-card me-2"></i> Способы оплаты</h4>
-                                <button class="btn btn-primary" onclick="showAddPaymentModal()">
-                                    <i class="fas fa-plus me-2"></i> Добавить карту
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div class="payment-methods">
-                                    <div class="payment-card">
-                                        <div class="card-info">
-                                            <i class="fab fa-cc-visa fa-2x text-primary"></i>
-                                            <div class="card-details">
-                                                <h6>**** **** **** 1234</h6>
-                                                <p class="text-muted">Истекает 12/25</p>
-                                            </div>
-                                        </div>
-                                        <div class="card-actions">
-                                            <span class="badge bg-success">По умолчанию</span>
-                                            <button class="btn btn-outline-danger btn-sm">Удалить</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notifications Tab -->
-                    <div id="notifications-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-bell me-2"></i> Настройки уведомлений</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="notification-settings">
-                                    <div class="setting-item">
-                                        <div class="setting-info">
-                                            <h6>Email уведомления</h6>
-                                            <p class="text-muted">Получать уведомления о заказах и акциях</p>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                                        </div>
-                                    </div>
-                                    <div class="setting-item">
-                                        <div class="setting-info">
-                                            <h6>SMS уведомления</h6>
-                                            <p class="text-muted">Получать SMS о статусе доставки</p>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="smsNotifications">
-                                        </div>
-                                    </div>
-                                    <div class="setting-item">
-                                        <div class="setting-info">
-                                            <h6>Рекламные рассылки</h6>
-                                            <p class="text-muted">Получать информацию о скидках и новинках</p>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="promoNotifications" checked>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Settings Tab -->
-                    <div id="settings-tab" class="tab-content">
-                        <div class="content-card">
-                            <div class="card-header">
-                                <h4><i class="fas fa-cog me-2"></i> Настройки аккаунта</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="settings-section">
-                                    <h6>Язык и регион</h6>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Язык интерфейса</label>
-                                            <select class="form-select">
-                                                <option value="ru">Русский</option>
-                                                <option value="en">English</option>
-                                                <option value="ka">ქართული</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Валюта</label>
-                                            <select class="form-select">
-                                                <option value="gel">₾ Лари</option>
-                                                <option value="usd">$ Доллар</option>
-                                                <option value="eur">€ Евро</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="settings-section">
-                                    <h6>Безопасность</h6>
-                                    <button class="btn btn-outline-primary me-2">Изменить пароль</button>
-                                    <button class="btn btn-outline-warning me-2">Настроить 2FA</button>
-                                    <button class="btn btn-outline-info">Скачать данные</button>
-                                </div>
-                                
-                                <div class="settings-section">
-                                    <h6>Опасная зона</h6>
-                                    <button class="btn btn-outline-danger">Удалить аккаунт</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Address Modal -->
-    <div class="modal fade" id="addAddressModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Добавить новый адрес</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addAddressForm" onsubmit="addAddress(event)">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Имя получателя *</label>
-                                <input type="text" class="form-control" id="recipientFirstName" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Фамилия получателя *</label>
-                                <input type="text" class="form-control" id="recipientLastName" required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Телефон *</label>
-                                <input type="tel" class="form-control" id="recipientPhone" placeholder="+995 555 123 456" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="recipientEmail">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Страна *</label>
-                            <select class="form-select" id="country" required onchange="loadCities()">
-                                <option value="">Выберите страну</option>
-                                <option value="georgia">Грузия</option>
-                                <option value="armenia">Армения</option>
-                                <option value="azerbaijan">Азербайджан</option>
-                            </select>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Город *</label>
-                                <select class="form-select" id="city" required>
-                                    <option value="">Сначала выберите страну</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Почтовый индекс</label>
-                                <input type="text" class="form-control" id="postalCode">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Улица и номер дома *</label>
-                            <input type="text" class="form-control" id="streetAddress" placeholder="ул. Руставели, 15" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Квартира/Офис</label>
-                                <input type="text" class="form-control" id="apartment" placeholder="кв. 25">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Этаж</label>
-                                <input type="text" class="form-control" id="floor" placeholder="3">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Дополнительная информация</label>
-                            <textarea class="form-control" id="additionalInfo" rows="3" placeholder="Особые инструкции для доставки..."></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Тип адреса</label>
-                            <select class="form-select" id="addressType">
-                                <option value="home">Домашний</option>
-                                <option value="work">Рабочий</option>
-                                <option value="other">Другой</option>
-                            </select>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="setAsDefault">
-                            <label class="form-check-label" for="setAsDefault">
-                                Установить как адрес по умолчанию
-                            </label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" form="addAddressForm" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> Сохранить адрес
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Tab switching
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all menu items
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            
-            // Add active class to clicked menu item
-            event.target.classList.add('active');
-        }
-
-        // Update profile
-        function updateProfile(event) {
-            event.preventDefault();
-            
-            const formData = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                phone: document.getElementById('phone').value,
-                birthDate: document.getElementById('birthDate').value,
-                gender: document.getElementById('gender').value
-            };
-            
-            // Simulate API call
-            setTimeout(() => {
-                alert('Профиль успешно обновлен!');
-            }, 500);
-        }
-
-        // Show add address modal
-        function showAddAddressModal() {
-            new bootstrap.Modal(document.getElementById('addAddressModal')).show();
-        }
-
-        // Load cities based on country
-        function loadCities() {
-            const country = document.getElementById('country').value;
-            const citySelect = document.getElementById('city');
-            
-            citySelect.innerHTML = '<option value="">Выберите город</option>';
-            
-            const cities = {
-                'georgia': ['Тбилиси', 'Батуми', 'Кутаиси', 'Рустави', 'Гори', 'Зугдиди', 'Поти', 'Кобулети'],
-                'armenia': ['Ереван', 'Гюмри', 'Ванадзор', 'Вагаршапат', 'Абовян', 'Капан', 'Гавар'],
-                'azerbaijan': ['Баку', 'Гянджа', 'Сумгаит', 'Мингечевир', 'Ленкорань', 'Шеки', 'Нахчыван']
-            };
-            
-            if (cities[country]) {
-                cities[country].forEach(city => {
-                    const option = document.createElement('option');
-                    option.value = city.toLowerCase();
-                    option.textContent = city;
-                    citySelect.appendChild(option);
-                });
-            }
-        }
-
-        // Add address
-        function addAddress(event) {
-            event.preventDefault();
-            
-            const addressData = {
-                firstName: document.getElementById('recipientFirstName').value,
-                lastName: document.getElementById('recipientLastName').value,
-                phone: document.getElementById('recipientPhone').value,
-                email: document.getElementById('recipientEmail').value,
-                country: document.getElementById('country').value,
-                city: document.getElementById('city').value,
-                postalCode: document.getElementById('postalCode').value,
-                streetAddress: document.getElementById('streetAddress').value,
-                apartment: document.getElementById('apartment').value,
-                floor: document.getElementById('floor').value,
-                additionalInfo: document.getElementById('additionalInfo').value,
-                addressType: document.getElementById('addressType').value,
-                isDefault: document.getElementById('setAsDefault').checked
-            };
-            
-            // Simulate API call
-            setTimeout(() => {
-                alert('Адрес успешно добавлен!');
-                bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
-                // Add the new address to the list (in real app, reload from server)
-                location.reload();
-            }, 500);
-        }
-
-        // Show add payment modal
-        function showAddPaymentModal() {
-            alert('Функция добавления карты будет реализована позже');
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load user data
-            loadUserData();
-        });
-
-        function loadUserData() {
-            // Simulate loading user data
-            setTimeout(() => {
-                document.getElementById('firstName').value = 'Иван';
-                document.getElementById('lastName').value = 'Иванов';
-                document.getElementById('phone').value = '+995 555 123 456';
-            }, 100);
-        }
-    </script>
-
     <style>
+        :root {
+            --primary-orange: #ff6b6b;
+            --secondary-pink: #4ecdc4;
+            --dark-text: #2d3436;
+            --text-light: #636e72;
+            --background-gray: #f8f9fa;
+            --border-light: #e9ecef;
+            --border-radius: 12px;
+            --border-radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .profile-section {
-            padding: 40px 0;
+            padding: 60px 0;
             background: var(--background-gray);
             min-height: 80vh;
         }
@@ -617,6 +34,8 @@
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-sm);
             overflow: hidden;
+            position: sticky;
+            top: 20px;
         }
 
         .profile-user-card {
@@ -626,9 +45,16 @@
             color: white;
         }
 
-        .profile-avatar i {
-            font-size: 4rem;
-            margin-bottom: 15px;
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2.5rem;
         }
 
         .user-stats {
@@ -663,235 +89,687 @@
             color: var(--dark-text);
             text-decoration: none;
             border-bottom: 1px solid var(--border-light);
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            cursor: pointer;
         }
 
-        .menu-item:hover {
+        .menu-item:hover, .menu-item.active {
             background: var(--background-gray);
             color: var(--primary-orange);
             text-decoration: none;
         }
 
-        .menu-item.active {
-            background: var(--primary-orange);
-            color: white;
-        }
-
         .menu-item i {
             width: 20px;
-            margin-right: 12px;
+            margin-right: 15px;
+            text-align: center;
         }
 
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .content-card {
+        .profile-content {
             background: white;
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-sm);
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            padding: 20px 30px;
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .card-body {
             padding: 30px;
         }
 
-        .order-item {
-            border: 1px solid var(--border-light);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-bottom: 20px;
+        .content-section {
+            display: none;
         }
 
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+        .content-section.active {
+            display: block;
         }
 
-        .order-products {
-            margin-bottom: 15px;
-        }
-
-        .product-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 10px 0;
-        }
-
-        .product-item img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: var(--border-radius);
-        }
-
-        .product-details h6 {
-            margin-bottom: 5px;
-        }
-
-        .addresses-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-light);
         }
 
         .address-card {
-            border: 1px solid var(--border-light);
+            border: 2px solid var(--border-light);
             border-radius: var(--border-radius);
             padding: 20px;
+            margin-bottom: 15px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .address-card:hover {
+            border-color: var(--primary-orange);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .address-card.selected {
+            border-color: var(--primary-orange);
+            background: rgba(255, 107, 107, 0.05);
         }
 
         .address-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
-        .address-details p {
-            margin-bottom: 5px;
+        .address-type {
+            background: var(--primary-orange);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        .address-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
+        .btn-edit, .btn-delete {
+            border: none;
+            background: none;
+            color: var(--text-light);
+            padding: 5px;
+            margin-left: 10px;
+            transition: var(--transition);
         }
 
-        .favorites-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
+        .btn-edit:hover {
+            color: var(--primary-orange);
         }
 
-        .favorite-item {
+        .btn-delete:hover {
+            color: #dc3545;
+        }
+
+        .order-card {
             border: 1px solid var(--border-light);
             border-radius: var(--border-radius);
-            overflow: hidden;
-        }
-
-        .favorite-item img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .favorite-details {
-            padding: 15px;
-        }
-
-        .favorite-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .payment-methods {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .payment-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding: 20px;
-            border: 1px solid var(--border-light);
-            border-radius: var(--border-radius);
-        }
-
-        .card-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .card-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .notification-settings {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-
-        .setting-info h6 {
-            margin-bottom: 5px;
-        }
-
-        .settings-section {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .settings-section:last-child {
-            border-bottom: none;
-        }
-
-        .settings-section h6 {
             margin-bottom: 15px;
+            transition: var(--transition);
+        }
+
+        .order-card:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .order-number {
+            font-weight: 700;
             color: var(--dark-text);
         }
 
-        @media (max-width: 768px) {
-            .profile-section .row {
-                flex-direction: column-reverse;
-            }
-            
-            .card-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .order-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-            
-            .addresses-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .favorites-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-processing {
+            background: #0dcaf0;
+            color: #000;
+        }
+
+        .status-shipped {
+            background: #198754;
+            color: white;
+        }
+
+        .status-delivered {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .form-floating {
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-pink);
+            border-color: var(--secondary-pink);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-orange);
+            border-color: var(--primary-orange);
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+            transform: translateY(-2px);
+        }
+
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .country-cities {
+            display: none;
+        }
+
+        .country-cities.active {
+            display: block;
+        }
+
+        .notification-item {
+            border-left: 4px solid var(--primary-orange);
+            background: var(--background-gray);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+
+        .notification-item.unread {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .wishlist-item {
+            border: 1px solid var(--border-light);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: var(--transition);
+        }
+
+        .wishlist-item:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .wishlist-image {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--border-radius);
+            object-fit: cover;
         }
     </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="temu-header">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <span class="brand-text">SHEIN Market</span>
+                    <small class="brand-subtitle">{{ _["Online Shopping"] }}</small>
+                </a>
+
+                <div class="navbar-nav ms-auto">
+                    <a class="btn btn-light me-2" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>Главная
+                    </a>
+                    <a class="btn btn-outline-light" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Profile Section -->
+    <div class="profile-section">
+        <div class="container">
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-lg-3 mb-4">
+                    <div class="profile-sidebar">
+                        <div class="profile-user-card">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <h5 class="mb-1">{{ session.username }}</h5>
+                            <p class="mb-0 opacity-75">{{ session.email }}</p>
+                            <div class="user-stats">
+                                <div class="stat">
+                                    <span class="number">0</span>
+                                    <span class="label">Заказов</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="number">0</span>
+                                    <span class="label">Избранное</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="number">VIP</span>
+                                    <span class="label">Статус</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-menu">
+                            <a class="menu-item active" data-section="personal">
+                                <i class="fas fa-user"></i>
+                                <span>Личные данные</span>
+                            </a>
+                            <a class="menu-item" data-section="addresses">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Мои адреса</span>
+                            </a>
+                            <a class="menu-item" data-section="orders">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>Мои заказы</span>
+                            </a>
+                            <a class="menu-item" data-section="wishlist">
+                                <i class="fas fa-heart"></i>
+                                <span>Избранное</span>
+                            </a>
+                            <a class="menu-item" data-section="notifications">
+                                <i class="fas fa-bell"></i>
+                                <span>Уведомления</span>
+                            </a>
+                            <a class="menu-item" data-section="settings">
+                                <i class="fas fa-cog"></i>
+                                <span>Настройки</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="col-lg-9">
+                    <div class="profile-content">
+                        <!-- Personal Info Section -->
+                        <div class="content-section active" id="personal">
+                            <h3 class="section-title">
+                                <i class="fas fa-user me-2"></i>Личные данные
+                            </h3>
+
+                            <form id="personalForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="firstName" value="{{ session.username.split()[0] if session.username.split() else session.username }}">
+                                            <label for="firstName">Имя</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="lastName" value="{{ session.username.split()[1] if session.username.split()|length > 1 else '' }}">
+                                            <label for="lastName">Фамилия</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control" id="email" value="{{ session.email }}" readonly>
+                                    <label for="email">Email</label>
+                                </div>
+
+                                <div class="form-floating mb-3">
+                                    <input type="tel" class="form-control" id="phone" placeholder="+995 555 123 456">
+                                    <label for="phone">Телефон</label>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="date" class="form-control" id="birthDate">
+                                            <label for="birthDate">Дата рождения</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="gender">
+                                                <option value="">Выберите пол</option>
+                                                <option value="male">Мужской</option>
+                                                <option value="female">Женский</option>
+                                                <option value="other">Другой</option>
+                                            </select>
+                                            <label for="gender">Пол</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Сохранить изменения
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Addresses Section -->
+                        <div class="content-section" id="addresses">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="section-title mb-0">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Мои адреса
+                                </h3>
+                                <button class="btn btn-primary" onclick="showAddAddressModal()">
+                                    <i class="fas fa-plus me-2"></i>Добавить адрес
+                                </button>
+                            </div>
+
+                            <div id="addressesList">
+                                <!-- Addresses will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Orders Section -->
+                        <div class="content-section" id="orders">
+                            <h3 class="section-title">
+                                <i class="fas fa-shopping-bag me-2"></i>Мои заказы
+                            </h3>
+
+                            <div id="ordersList">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    У вас пока нет заказов. <a href="{{ url_for('index') }}">Начните покупки!</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wishlist Section -->
+                        <div class="content-section" id="wishlist">
+                            <h3 class="section-title">
+                                <i class="fas fa-heart me-2"></i>Избранное
+                            </h3>
+
+                            <div id="wishlistItems">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-heart me-2"></i>
+                                    Ваш список избранного пуст. Добавляйте товары, которые вам нравятся!
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notifications Section -->
+                        <div class="content-section" id="notifications">
+                            <h3 class="section-title">
+                                <i class="fas fa-bell me-2"></i>Уведомления
+                            </h3>
+
+                            <div id="notificationsList">
+                                <div class="notification-item">
+                                    <h6>Добро пожаловать в SHEIN Market!</h6>
+                                    <p class="mb-1">Спасибо за регистрацию. Получите скидку 20% на первый заказ!</p>
+                                    <small class="text-muted">Сегодня</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Section -->
+                        <div class="content-section" id="settings">
+                            <h3 class="section-title">
+                                <i class="fas fa-cog me-2"></i>Настройки
+                            </h3>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Язык интерфейса</h5>
+                                    <select class="form-select mb-4" id="languageSelect">
+                                        <option value="ru">🇷🇺 Русский</option>
+                                        <option value="en">🇺🇸 English</option>
+                                        <option value="ka">🇬🇪 ქართული</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h5>Валюта</h5>
+                                    <select class="form-select mb-4" id="currencySelect">
+                                        <option value="usd">USD ($)</option>
+                                        <option value="gel">GEL (₾)</option>
+                                        <option value="rub">RUB (₽)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h5>Уведомления</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                <label class="form-check-label" for="emailNotifications">
+                                    Email уведомления о заказах
+                                </label>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="smsNotifications">
+                                <label class="form-check-label" for="smsNotifications">
+                                    SMS уведомления
+                                </label>
+                            </div>
+
+                            <div class="form-check form-switch mb-4">
+                                <input class="form-check-input" type="checkbox" id="promoNotifications" checked>
+                                <label class="form-check-label" for="promoNotifications">
+                                    Акции и спецпредложения
+                                </label>
+                            </div>
+
+                            <h5>Безопасность</h5>
+                            <button class="btn btn-outline-primary me-3" onclick="showChangePasswordModal()">
+                                <i class="fas fa-key me-2"></i>Изменить пароль
+                            </button>
+
+                            <button class="btn btn-outline-danger" onclick="showDeleteAccountModal()">
+                                <i class="fas fa-trash me-2"></i>Удалить аккаунт
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Address Modal -->
+    <div class="modal fade" id="addAddressModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить новый адрес</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAddressForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Тип адреса *</label>
+                                <select class="form-select" id="addressType" required>
+                                    <option value="">Выберите тип</option>
+                                    <option value="home">🏠 Дом</option>
+                                    <option value="work">🏢 Работа</option>
+                                    <option value="other">📍 Другое</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Название (необязательно)</label>
+                                <input type="text" class="form-control" id="addressName" placeholder="Например: Мой офис">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Имя *</label>
+                                <input type="text" class="form-control" id="recipientFirstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Фамилия *</label>
+                                <input type="text" class="form-control" id="recipientLastName" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Телефон *</label>
+                            <input type="tel" class="form-control" id="recipientPhone" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Страна *</label>
+                            <select class="form-select" id="country" required onchange="updateCities()">
+                                <option value="">Выберите страну</option>
+                                <option value="georgia">🇬🇪 Грузия</option>
+                                <option value="armenia">🇦🇲 Армения</option>
+                                <option value="azerbaijan">🇦🇿 Азербайджан</option>
+                                <option value="russia">🇷🇺 Россия</option>
+                                <option value="usa">🇺🇸 США</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Город *</label>
+                                <select class="form-select" id="city" required>
+                                    <option value="">Сначала выберите страну</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Почтовый индекс</label>
+                                <input type="text" class="form-control" id="postalCode">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Улица и номер дома *</label>
+                            <input type="text" class="form-control" id="streetAddress" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Квартира/Офис</label>
+                            <input type="text" class="form-control" id="apartment">
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="isDefault">
+                            <label class="form-check-label" for="isDefault">
+                                Сделать адресом по умолчанию
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAddress()">
+                        <i class="fas fa-save me-2"></i>Сохранить адрес
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Menu navigation
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Update active menu item
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                // Show corresponding section
+                const sectionId = this.getAttribute('data-section');
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+
+        // Cities data
+        const citiesData = {
+            georgia: ['Тбилиси', 'Батуми', 'Кутаиси', 'Зугдиди', 'Гори', 'Рустави'],
+            armenia: ['Ереван', 'Гюмри', 'Ванадзор', 'Эчмиадзин', 'Абовян'],
+            azerbaijan: ['Баку', 'Гянджа', 'Сумгаит', 'Мингечевир', 'Ленкорань'],
+            russia: ['Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань'],
+            usa: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix']
+        };
+
+        function updateCities() {
+            const countrySelect = document.getElementById('country');
+            const citySelect = document.getElementById('city');
+            const selectedCountry = countrySelect.value;
+
+            citySelect.innerHTML = '<option value="">Выберите город</option>';
+
+            if (selectedCountry && citiesData[selectedCountry]) {
+                citiesData[selectedCountry].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.toLowerCase();
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            }
+        }
+
+        function showAddAddressModal() {
+            new bootstrap.Modal(document.getElementById('addAddressModal')).show();
+        }
+
+        function saveAddress() {
+            const form = document.getElementById('addAddressForm');
+            if (form.checkValidity()) {
+                // Save address logic here
+                alert('Адрес сохранен успешно!');
+                bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
+                loadAddresses();
+            } else {
+                form.reportValidity();
+            }
+        }
+
+        function loadAddresses() {
+            // Load addresses from server
+            const addressesList = document.getElementById('addressesList');
+            addressesList.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    У вас пока нет сохраненных адресов. Добавьте первый адрес!
+                </div>
+            `;
+        }
+
+        function showChangePasswordModal() {
+            alert('Функция смены пароля будет доступна в следующем обновлении');
+        }
+
+        function showDeleteAccountModal() {
+            if (confirm('Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить.')) {
+                alert('Функция удаления аккаунта будет доступна в следующем обновлении');
+            }
+        }
+
+        // Personal form submission
+        document.getElementById('personalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Личные данные сохранены!');
+        });
+
+        // Language change
+        document.getElementById('languageSelect').addEventListener('change', function() {
+            const selectedLang = this.value;
+            window.location.href = `/set_language/${selectedLang}`;
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAddresses();
+        });
+    </script>
 </body>
 </html>

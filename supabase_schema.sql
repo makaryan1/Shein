@@ -46,6 +46,7 @@ CREATE TABLE orders (
     status VARCHAR(50) DEFAULT 'pending',
     total_amount DECIMAL(10,2) NOT NULL,
     shipping_address TEXT,
+    customer_info JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -69,6 +70,17 @@ CREATE TABLE favorites (
     UNIQUE(user_id, product_id)
 );
 
+-- Создание таблицы уведомлений
+CREATE TABLE notifications (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    order_id UUID,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Индексы для оптимизации
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_in_stock ON products(in_stock);
@@ -76,6 +88,7 @@ CREATE INDEX idx_cart_user_id ON cart(user_id);
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at);
 
 -- Вставка тестовых данных
 INSERT INTO users (email, username, password_hash, is_admin) VALUES
